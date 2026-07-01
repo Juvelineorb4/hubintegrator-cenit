@@ -1,0 +1,31 @@
+{
+    "name": "phd-hub-backend",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "nodemon --legacy-watch --exec tsx src/index.ts",
+        "build": "tsc -p tsconfig.build.json",
+        "start": "node dist/index.js",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push && tsx src/core/db/drizzle/setup.ts",
+        "db:studio": "drizzle-kit studio",
+        "seed:partitions": "tsx src/core/db/drizzle/seeds/partitions.seed.ts",
+        "seed:demo": "tsx src/core/db/drizzle/seeds/demo.seed.ts"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "drizzle-orm": "^0.36.0",
+        "express": "^4.21.1",
+        "pg": "^8.13.1"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.10.1",
+        "@types/pg": "^8.20.0",
+        "drizzle-kit": "^0.27.1",
+        "nodemon": "^3.1.0",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2"
+    }
+}

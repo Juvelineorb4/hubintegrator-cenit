@@ -1,0 +1,21 @@
+{
+  "name": "odbc-api-nodejs-phd",
+  "version": "1.0.0",
+  "description": "PROYECTO CON ARQUITECTURA MVC E INYECCION DE DEPENDENCIAS PARA CONECTAR BASE DE DATOS ODBC A SHADOW PHD CON NODEJS",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start:odbc": "node --watch server-with-odbc.js",
+    "start:local": "node --watch server-with-local.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "4.18.2",
+    "odbc": "2.4.9"
+  }
+}

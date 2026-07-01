@@ -1,0 +1,46 @@
+# Production override for Hub Integrator v0.2.0
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requires Docker Compose >= 2.24.0 (for !reset tag support).
+# Verify with: docker compose version
+#
+# What this file changes vs the base docker-compose.yml:
+#   - Removes source bind mounts: code runs from the baked image, not the host filesystem.
+#   - Removes /app/node_modules anonymous volume (dev-only pattern).
+#   - Removes uvicorn --reload from python-app.
+#   - Removes published ports for postgres (5432) and redis (6379).
+#     Internal container-to-container communication still works via phd_hub_network.
+#
+# What this file does NOT change:
+#   - postgres_data named volume — preserved for database persistence.
+#   - All healthchecks, restart policies, and network membership.
+#   - Environment variables (controlled by .env at deployment time).
+
+services:
+
+  app-backend:
+    # Remove dev bind mount (./app-backend:/app) and anonymous node_modules volume.
+    # Code and dependencies are read from the image built with 'docker compose build'.
+    volumes: !reset []
+
+  python-app:
+    # Remove dev bind mount. Run without --reload (file watcher disabled in production).
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes: !reset []
+
+  python-etl:
+    # Remove dev bind mount.
+    volumes: !reset []
+
+  postgres:
+    # Do not publish 5432 to the host network in production.
+    # app-backend reaches postgres via the internal phd_hub_network using service name 'postgres'.
+    ports: !reset []
+    # volumes intentionally omitted here — base file's postgres_data:/var/lib/postgresql/data is kept.
+
+  redis:
+    # Do not publish 6379 to the host network in production.
+    # python-app reaches redis via redis://redis:6379/0 on phd_hub_network.
+    ports: !reset []

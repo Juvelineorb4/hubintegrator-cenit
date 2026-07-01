@@ -1,0 +1,170 @@
+[
+    {
+        "TAGNAME": "POZ_FIC_1311.PV",
+        "DESCRIPTION": "Control Flujo L14 AYA hacia Galan",
+        "TAGNO": 37702,
+        "UNITS": "BPH",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "POZ_MAOP_DES_L14.PV",
+        "DESCRIPTION": "Maop Presion Despacho L14",
+        "TAGNO": 137892,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "POZ_PIC_1634.PV",
+        "DESCRIPTION": "Control presion descarga L14 AYA",
+        "TAGNO": 136742,
+        "UNITS": "psi",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "POZ_VL1311ABBTN.PV",
+        "DESCRIPTION": "Volumen bruto total dia anterior L14 AYA",
+        "TAGNO": 37598,
+        "UNITS": "Bls",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "POZ_CTRL_D14_ES.PV",
+        "DESCRIPTION": "Selector de control despacho L14 Estacion-Scada",
+        "TAGNO": 116497,
+        "UNITS": null,
+        "DATA_TYPE_NAME": "Integer",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "GAL_FT1312A_D_B.PV",
+        "DESCRIPTION": "Flujo bruto L14 POZ (Bls/hora)",
+        "TAGNO": 37945,
+        "UNITS": "BPH",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_ayagal14"
+    },
+    {
+        "TAGNAME": "GAL_PT_1602A.PV",
+        "DESCRIPTION": "Presion control entrada sistema recibo L14 POZ",
+        "TAGNO": 37912,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_ayagal14"
+    },
+    {
+        "TAGNAME": "GAL_VL1312ADBTN.PV",
+        "DESCRIPTION": "Volumen bruto total dia anterior L14 POZ",
+        "TAGNO": 37956,
+        "UNITS": "BLS",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_ayagal14"
+    },
+    {
+        "TAGNAME": "GAL_CTRL14_E_S.PV",
+        "DESCRIPTION": "Selector de control L14 POZ (Estacion/Scada)",
+        "TAGNO": 116522,
+        "UNITS": null,
+        "DATA_TYPE_NAME": "Integer",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "COP_FIC_1601.PV",
+        "DESCRIPTION": "Control Flujo L14 COP hacia Galan",
+        "TAGNO": 39345,
+        "UNITS": "BPH",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "COP_MAOP_DES_L14.PV",
+        "DESCRIPTION": "MAOP Presion Despacho L14",
+        "TAGNO": 138980,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "COP_MAOP_REC_L14.PV",
+        "DESCRIPTION": "MAOP Presion Recibo L14",
+        "TAGNO": 138978,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "COP_PIC_1601.PV",
+        "DESCRIPTION": "Control presion de descarga L14 COP",
+        "TAGNO": 74133,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "COP_PT_1606.PV",
+        "DESCRIPTION": "Presion estatica de la estacion L14 6",
+        "TAGNO": 39286,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "COP_CTRLL14_E_S.PV",
+        "DESCRIPTION": "Selector control estacion L14 4 (Est/Sca)",
+        "TAGNO": 116550,
+        "UNITS": null,
+        "DATA_TYPE_NAME": "Integer",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "AYA_FIC_1401.PV",
+        "DESCRIPTION": "Control Flujo L14 AYA hacia Galan",
+        "TAGNO": 38502,
+        "UNITS": "BPH",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "AYA_MAOP_REC_L14.PV",
+        "DESCRIPTION": "Maop Recibo L14",
+        "TAGNO": 140763,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "e_ayacucho"
+    },
+    {
+        "TAGNAME": "AYA_PIC_1411.PV",
+        "DESCRIPTION": "Control presion de descarga L14 AYA",
+        "TAGNO": 38537,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_galpoz"
+    },
+    {
+        "TAGNAME": "AYA_PT_1601.PV",
+        "DESCRIPTION": "Presion de entrada a la estacion L14 Gal",
+        "TAGNO": 38568,
+        "UNITS": "PSI",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "AYA_VL1330ABTN.PV",
+        "DESCRIPTION": "Volumen bruto total dia anterior desp L14 Gal",
+        "TAGNO": 38627,
+        "UNITS": "BLS",
+        "DATA_TYPE_NAME": "Float",
+        "ASSET_NAME": "l_pozgal"
+    },
+    {
+        "TAGNAME": "AYA_CTRLGAL_E_S.PV",
+        "DESCRIPTION": "Selector de control L14 Gal (Estacion/Scada)",
+        "TAGNO": 116537,
+        "UNITS": null,
+        "DATA_TYPE_NAME": "Integer",
+        "ASSET_NAME": "l_pozgal"
+    }
+]

@@ -1,0 +1,191 @@
+[
+  {
+    "TIMESTAMP": "2026-03-23 14:15:30.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.3,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:15:50.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.3,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:15:55.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:16:00.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.3,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:16:15.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.3,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:16:20.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:23:35.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:24:35.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:24:40.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 847.3,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:24:45.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-23 14:25:00.000",
+    "TAGNAME": "CAR_PT_3612.pv",
+    "VALUE": 846.8,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:50:45.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.5,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:50:50.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.5,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:50:55.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.7,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:00.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:05.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:10.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.4,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:15.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.5,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:20.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:25.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.5,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:30.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:35.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:40.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:45.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.7,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:50.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.7,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:51:55.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.6,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  },
+  {
+    "TIMESTAMP": "2026-03-24 13:52:00.000",
+    "TAGNAME": "FRE_PT_3601.pv",
+    "VALUE": 138.4,
+    "DATA_TYPE_NAME": "Float",
+    "CONFIDENCE": 100
+  }
+]

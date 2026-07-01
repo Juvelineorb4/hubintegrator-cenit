@@ -1,0 +1,123 @@
+services:
+
+  # Servicio de base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine # Imagen ligera de PostgreSQL
+    container_name: postgres_db
+    restart: unless-stopped # Reinicia el contenedor si falla
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # Nombre de la base de datos
+      POSTGRES_USER: ${POSTGRES_USER} # Usuario
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Contraseña
+
+    ports:
+      - "5432:5432" # Puerto host:contenedor
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persistencia de datos
+    networks:
+      - phd_hub_network
+
+    # Verifica que la base de datos esté lista antes de que otros servicios la usen
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio backend en Node.js (Express)
+  app-backend:
+    build:
+      context: ./app-backend # Carpeta del proyecto Node
+      dockerfile: Dockerfile
+
+    container_name: node_app_backend
+    restart: unless-stopped
+    # Espera a que PostgreSQL esté listo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000" # API disponible en localhost:3000
+    volumes:
+      - ./app-backend:/app # Monta el código (modo desarrollo)
+      - /app/node_modules # Usa el node_modules de la imagen, no el del host
+    environment:
+      PORT: 3000
+      # Cadena de conexión a PostgreSQL usando el nombre del servicio como host
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    networks:
+      - phd_hub_network
+
+  # Servicio Python (FastAPI) para carga masiva desde Excel
+  python-app:
+    build:
+      context: ./python-app
+      dockerfile: Dockerfile
+
+    container_name: python_app
+    restart: unless-stopped
+    depends_on:
+      - app-backend
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./python-app:/app
+    environment:
+      PORT: 8000
+      BACKEND_URL: http://app-backend:3000/api
+      ODBC_API_URL: ${ODBC_API_URL}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: "300"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - phd_hub_network
+
+  # Servicio Python ETL — carga datos del historian hacia PostgreSQL
+  python-etl:
+    build:
+      context: ./python-etl
+      dockerfile: Dockerfile
+
+    container_name: python_etl
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./python-etl:/app
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ODBC_API_URL: ${ODBC_API_URL}
+      ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-60}
+    networks:
+      - phd_hub_network
+
+  # Servicio Redis — caché en memoria para pressure, flow y volume queries
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - phd_hub_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    # Almacena datos de PostgreSQL de forma persistente
+
+networks:
+  phd_hub_network:
+    driver: bridge
