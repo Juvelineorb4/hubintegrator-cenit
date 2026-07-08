@@ -68,7 +68,10 @@ services:
     environment:
       PORT: 8000
       BACKEND_URL: http://app-backend:3000/api
+      HISTORIAN_SOURCE: ${HISTORIAN_SOURCE:-postgres}
       ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_TTL: "300"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
