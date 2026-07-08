@@ -10,6 +10,7 @@ import httpx
 from app.services.flow_query import get_flow_by_system
 from app.services.odbc_historian_client import OdbcHistorianClient
 from app.services.pressure_query import get_pressure_by_system
+from app.services.volume_query import get_volume_by_system
 
 
 def _response(status_code: int, payload: object | None = None, content: bytes | None = None) -> httpx.Response:
@@ -44,13 +45,18 @@ class FakeBackendClient:
 
 
 class FakeOdbcClient:
-    def __init__(self, rows):
-        self.rows = rows
+    def __init__(self, rows=None, raw_rows=None):
+        self.rows = rows or []
+        self.raw_rows = raw_rows or []
         self.calls = []
 
     async def fetch_interval_rows(self, tagnames, start, end, interval_seconds):
         self.calls.append((tagnames, start, end, interval_seconds))
         return self.rows
+
+    async def fetch_raw_rows(self, tagnames, start, end):
+        self.calls.append((tagnames, start, end))
+        return self.raw_rows
 
 
 class HistorianSourceTests(IsolatedAsyncioTestCase):
@@ -282,3 +288,146 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["tagname"], "FI_1")
         self.assertIsNone(result[0]["data"][0]["state_value"])
+
+    async def test_postgres_volume_keeps_current_flow(self):
+        tags_response = _response(
+            200,
+            {
+                "data": [
+                    {"tagname": "VOL_1", "systemCode": "SYS", "category": "VOLUME", "systemName": "System A"},
+                ]
+            },
+        )
+        raw_response = _response(
+            200,
+            {
+                "data": [
+                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:00:00Z", "valueDouble": 1.0},
+                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:01:00Z", "valueDouble": 1.0},
+                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:02:00Z", "valueDouble": 2.0},
+                ]
+            },
+        )
+        backend = FakeBackendClient(tags_response, raw_response)
+        odbc = FakeOdbcClient([])
+
+        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "postgres"}, clear=False):
+            with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
+                "app.services.volume_query.OdbcHistorianClient",
+                return_value=odbc,
+            ):
+                result = await get_volume_by_system(
+                    "SYS",
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["count"], 2)
+        self.assertEqual([point["value"] for point in result[0]["data"]], [1.0, 2.0])
+        self.assertEqual(len(odbc.calls), 0)
+
+    async def test_odbc_volume_filters_and_orders_raw_rows(self):
+        backend = FakeBackendClient(
+            _response(
+                200,
+                {
+                    "data": [
+                        {"tagname": "vol_1", "systemCode": "SYS", "category": "VOLUME", "systemName": "System A"},
+                        {"tagname": "vol_2", "systemCode": "SYS", "category": "VOLUME", "systemName": "System A"},
+                    ]
+                },
+            )
+        )
+        raw_rows = [
+            {"TAGNAME": "VOL_1", "timestamp": "2026-01-01T00:02:00Z", "value": 3.0, "confidence": 100},
+            {"TAGNAME": "VOL_1", "timestamp": "2026-01-01T00:01:00Z", "value": 2.0, "confidence": 100},
+            {"TAGNAME": "VOL_1", "timestamp": "2026-01-01T00:00:00Z", "value": 2.0, "confidence": 100},
+            {"TAGNAME": "VOL_1", "timestamp": "2026-01-01T00:03:00Z", "value": None, "confidence": 100},
+            {"TAGNAME": "VOL_1", "timestamp": "2026-01-01T00:04:00Z", "value": 4.0, "confidence": 0},
+            {"TAGNAME": "VOL_2", "timestamp": "2026-01-01T00:00:00Z", "value": 9.0, "confidence": 100},
+            {"TAGNAME": "VOL_2", "timestamp": "2026-01-01T00:01:00Z", "value": 9.0, "confidence": 100},
+            {"TAGNAME": "VOL_2", "timestamp": "2026-01-01T00:02:00Z", "value": 8.0, "confidence": 100},
+        ]
+        odbc = FakeOdbcClient(raw_rows=raw_rows)
+
+        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
+            with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
+                "app.services.volume_query.OdbcHistorianClient",
+                return_value=odbc,
+            ):
+                result = await get_volume_by_system(
+                    "SYS",
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                )
+
+        self.assertEqual(len(result), 2)
+        vol1 = next(item for item in result if item["tagname"] == "vol_1")
+        vol2 = next(item for item in result if item["tagname"] == "vol_2")
+        self.assertEqual([point["value"] for point in vol1["data"]], [2.0, 3.0])
+        self.assertEqual([point["timestamp"] for point in vol1["data"]], ["2026-01-01T00:00:00Z", "2026-01-01T00:02:00Z"])
+        self.assertEqual([point["value"] for point in vol2["data"]], [9.0, 8.0])
+
+    async def test_odbc_raw_errors_invalid_json_and_http_status(self):
+        request = httpx.Request("GET", "http://example.test/tags")
+        bad_json = httpx.Response(200, request=request, content=b"not-json")
+        response_400 = httpx.Response(400, request=request, json={"error": "bad request"})
+        response_500 = httpx.Response(500, request=request, json={"error": "server"})
+
+        class Client400:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def get(self, *args, **kwargs):
+                return response_400
+
+        class Client500:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def get(self, *args, **kwargs):
+                return response_500
+
+        class ClientTimeout:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def get(self, *args, **kwargs):
+                raise httpx.ReadTimeout("timeout", request=request)
+
+        class ClientBadJSON:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def get(self, *args, **kwargs):
+                return bad_json
+
+        with patch.dict(os.environ, {"ODBC_API_URL": "http://odbc.test", "HISTORIAN_SOURCE": "odbc"}, clear=False):
+            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client400()):
+                with self.assertRaises(httpx.HTTPStatusError):
+                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+
+            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client500()):
+                with self.assertRaises(httpx.HTTPStatusError):
+                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+
+            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientTimeout()):
+                with self.assertRaises(httpx.ReadTimeout):
+                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+
+            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientBadJSON()):
+                with self.assertRaises(ValueError):
+                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
