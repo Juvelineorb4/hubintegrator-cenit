@@ -5,14 +5,10 @@ import httpx
 
 from app.services.odbc_historian_client import (
     OdbcHistorianClient,
-    get_historian_source,
     normalize_tagname,
 )
 
 BACKEND = os.getenv("BACKEND_URL", "http://app-backend:3000/api")
-
-_BATCH_LIMIT = 1_000_000
-
 
 def _local_naive_to_utc(dt: datetime) -> datetime:
     """Interpreta el input como Colombia (-05) y lo convierte a UTC."""
@@ -73,27 +69,11 @@ async def get_volume_by_system(
     if not tags:
         return []
 
-    source = get_historian_source()
-    if source == "postgres":
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post(
-                f"{BACKEND}/tag-values/raw/batch",
-                json={
-                    "tagnames": [t["tagname"] for t in tags],
-                    "start":    start_utc.isoformat(),
-                    "end":      end_utc.isoformat(),
-                    "limit":    _BATCH_LIMIT,
-                    "offset":   0,
-                },
-            )
-            r.raise_for_status()
-            raw_rows: list[dict] = r.json().get("data", [])
-    else:
-        raw_rows = await OdbcHistorianClient().fetch_raw_rows(
-            [t["tagname"] for t in tags],
-            start_utc,
-            end_utc,
-        )
+    raw_rows = await OdbcHistorianClient().fetch_raw_rows(
+        [t["tagname"] for t in tags],
+        start_utc,
+        end_utc,
+    )
 
     rows_by_tagname: dict[str, list[dict]] = {}
     for row in raw_rows:

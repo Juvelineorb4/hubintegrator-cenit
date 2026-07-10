@@ -30,10 +30,6 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes: !reset []
 
-  python-etl:
-    # Remove dev bind mount.
-    volumes: !reset []
-
   postgres:
     # Do not publish 5432 to the host network in production.
     # app-backend reaches postgres via the internal phd_hub_network using service name 'postgres'.

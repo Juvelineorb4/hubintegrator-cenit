@@ -8,16 +8,6 @@ from typing import Any
 import httpx
 
 
-_VALID_HISTORIAN_SOURCES = {"postgres", "odbc"}
-
-
-def get_historian_source() -> str:
-    source = os.getenv("HISTORIAN_SOURCE", "postgres").strip().lower()
-    if source not in _VALID_HISTORIAN_SOURCES:
-        raise ValueError("HISTORIAN_SOURCE must be 'postgres' or 'odbc'")
-    return source
-
-
 def normalize_tagname(tagname: str | None) -> str:
     return (tagname or "").strip().upper()
 

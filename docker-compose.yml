@@ -68,37 +68,12 @@ services:
     environment:
       PORT: 8000
       BACKEND_URL: http://app-backend:3000/api
-      HISTORIAN_SOURCE: ${HISTORIAN_SOURCE:-postgres}
       ODBC_API_URL: ${ODBC_API_URL}
       ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
       ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_TTL: "300"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    networks:
-      - phd_hub_network
-
-  # Servicio Python ETL — carga datos del historian hacia PostgreSQL
-  python-etl:
-    build:
-      context: ./python-etl
-      dockerfile: Dockerfile
-
-    container_name: python_etl
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./python-etl:/app
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      ODBC_API_URL: ${ODBC_API_URL}
-      ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-60}
     networks:
       - phd_hub_network
 

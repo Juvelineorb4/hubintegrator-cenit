@@ -6,7 +6,6 @@ import os
 
 from app.services.odbc_historian_client import (
     OdbcHistorianClient,
-    get_historian_source,
     normalize_tagname,
 )
 
@@ -128,27 +127,12 @@ async def get_flow_by_system(
     if not tags:
         return []
 
-    source = get_historian_source()
-    if source == "postgres":
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post(
-                f"{BACKEND}/tag-values/batch/historized",
-                json={
-                    "tagnames":        [t["tagname"] for t in tags],
-                    "start":           start_utc.isoformat(),
-                    "end":             end_utc.isoformat(),
-                    "intervalSeconds": interval_seconds,
-                },
-            )
-            r.raise_for_status()
-            historized_rows: list[dict] = r.json().get("data", [])
-    else:
-        historized_rows = await OdbcHistorianClient().fetch_interval_rows(
-            [t["tagname"] for t in tags],
-            start_utc,
-            end_utc,
-            interval_seconds,
-        )
+    historized_rows = await OdbcHistorianClient().fetch_interval_rows(
+        [t["tagname"] for t in tags],
+        start_utc,
+        end_utc,
+        interval_seconds,
+    )
 
     rows_by_tagname = _rows_by_tagname(historized_rows)
 

@@ -163,45 +163,41 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             "2026-01-01T00:01:00Z",
         ])
 
-    async def test_postgres_pressure_keeps_current_flow(self):
-        tags_response = _response(
-            200,
-            {
-                "data": [
-                    {"tagname": "PT_1", "systemCode": "SYS", "category": "PRESSURE_IN", "systemName": "System A"},
-                    {"tagname": "PT_1_MAX", "systemCode": "SYS", "category": "PRESSURE_IN_MAX", "systemName": "System A"},
-                ]
-            },
+    async def test_odbc_pressure_fetches_interval_and_avoids_historical_post(self):
+        backend = FakeBackendClient(
+            _response(
+                200,
+                {
+                    "data": [
+                        {"tagname": "PT_1", "systemCode": "SYS", "category": "PRESSURE_IN", "systemName": "System A"},
+                        {"tagname": "PT_1_MAX", "systemCode": "SYS", "category": "PRESSURE_IN_MAX", "systemName": "System A"},
+                    ]
+                },
+            )
         )
-        historized_response = _response(
-            200,
-            {
-                "data": [
-                    {"tagname": "PT_1", "timestamp": "2026-01-01T00:00:00Z", "valueDouble": 10.0},
-                    {"tagname": "PT_1_MAX", "timestamp": "2026-01-01T00:00:00Z", "valueDouble": 11.0},
-                ]
-            },
-        )
-        backend = FakeBackendClient(tags_response, historized_response)
-        odbc = FakeOdbcClient([])
+        odbc = FakeOdbcClient([
+            {"tagname": "PT_1", "timestamp": "2026-01-01T00:00:00Z", "value.float": 10.0},
+            {"tagname": "PT_1_MAX", "timestamp": "2026-01-01T00:00:00Z", "value.float": 11.0},
+        ])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "postgres"}, clear=False):
-            with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.pressure_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_pressure_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                    60,
-                )
+        with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.pressure_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_pressure_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                60,
+            )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["tagname"], "PT_1")
         self.assertEqual(result[0]["count"], 1)
         self.assertEqual(result[0]["data"][0]["value"], 10.0)
-        self.assertEqual(len(odbc.calls), 0)
+        self.assertEqual(odbc.calls[0][0], ["PT_1", "PT_1_MAX"])
+        self.assertEqual(odbc.calls[0][3], 60)
+        self.assertEqual(backend.post_calls, [])
 
     async def test_odbc_pressure_normalizes_uppercase_tagname(self):
         backend = FakeBackendClient(
@@ -392,43 +388,40 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
         self.assertEqual(result[0]["tagname"], "FI_1")
         self.assertIsNone(result[0]["data"][0]["state_value"])
 
-    async def test_postgres_volume_keeps_current_flow(self):
-        tags_response = _response(
-            200,
-            {
-                "data": [
-                    {"tagname": "VOL_1", "systemCode": "SYS", "category": "VOLUME", "systemName": "System A"},
-                ]
-            },
+    async def test_odbc_volume_fetches_raw_and_avoids_historical_post(self):
+        backend = FakeBackendClient(
+            _response(
+                200,
+                {
+                    "data": [
+                        {"tagname": "VOL_1", "systemCode": "SYS", "category": "VOLUME", "systemName": "System A"},
+                    ]
+                },
+            )
         )
-        raw_response = _response(
-            200,
-            {
-                "data": [
-                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:00:00Z", "valueDouble": 1.0},
-                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:01:00Z", "valueDouble": 1.0},
-                    {"tagname": "VOL_1", "timestamp": "2026-01-01T00:02:00Z", "valueDouble": 2.0},
-                ]
-            },
+        odbc = FakeOdbcClient(
+            raw_rows=[
+                {"tagname": "VOL_1", "timestamp": "2026-01-01T00:00:00Z", "valueFloat": 1.0},
+                {"tagname": "VOL_1", "timestamp": "2026-01-01T00:01:00Z", "valueFloat": 1.0},
+                {"tagname": "VOL_1", "timestamp": "2026-01-01T00:02:00Z", "valueFloat": 2.0},
+            ]
         )
-        backend = FakeBackendClient(tags_response, raw_response)
-        odbc = FakeOdbcClient([])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "postgres"}, clear=False):
-            with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.volume_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_volume_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                )
+        with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.volume_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_volume_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+            )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["count"], 2)
         self.assertEqual([point["value"] for point in result[0]["data"]], [1.0, 2.0])
-        self.assertEqual(len(odbc.calls), 0)
+        self.assertEqual(odbc.calls[0][0], ["VOL_1"])
+        self.assertEqual(backend.post_calls, [])
 
     async def test_odbc_volume_filters_and_orders_raw_rows(self):
         backend = FakeBackendClient(
