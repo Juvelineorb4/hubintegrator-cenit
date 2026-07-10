@@ -57,9 +57,11 @@ def _rows_by_tagname(rows: list[dict]) -> dict[str, list[dict]]:
                 "value": _pick_value(row),
             }
         )
+    for rows_for_tag in grouped.values():
+        rows_for_tag.sort(key=lambda item: item["timestamp"])
     return grouped
 
-
+# Busca los tags de flujo pertenecientes al sistema
 async def _fetch_tags_for_system(system_code: str) -> list[dict]:
     async with httpx.AsyncClient(timeout=120) as client:
         r = await client.get(
@@ -75,32 +77,39 @@ def _merge_main_and_selector(
     selector_data: list[dict] | None,
 ) -> list[dict]:
     """
-    Joins two already-historized series (same grid, same length).
+    Joins main flow rows with selector state by timestamp.
     Returns [{timestamp, value, state_value}].
-    If selector_data is absent or mismatched, state_value is None for every row.
+    state_value uses the last selector value known at or before each main timestamp.
+    If no selector value exists yet, state_value is None.
     """
     if not main_data:
         return []
 
-    if selector_data and len(main_data) == len(selector_data):
-        return [
-            {
-                "timestamp":   m["timestamp"],
-                "value":       m["value"],
-                "state_value": s["value"],
-            }
-            for m, s in zip(main_data, selector_data)
-        ]
+    main_sorted = sorted(main_data, key=lambda item: item["timestamp"])
+    selector_sorted = sorted(selector_data or [], key=lambda item: item["timestamp"])
 
-    # No SELECTOR_S_E companion — return main rows with state_value = null
-    return [
-        {
-            "timestamp":   m["timestamp"],
-            "value":       m["value"],
-            "state_value": None,
-        }
-        for m in main_data
-    ]
+    merged: list[dict] = []
+    selector_idx = 0
+    has_selector_state = False
+    last_selector_state = None
+
+    for main_row in main_sorted:
+        main_ts = main_row["timestamp"]
+
+        while selector_idx < len(selector_sorted) and selector_sorted[selector_idx]["timestamp"] <= main_ts:
+            last_selector_state = selector_sorted[selector_idx]["value"]
+            has_selector_state = True
+            selector_idx += 1
+
+        merged.append(
+            {
+                "timestamp": main_ts,
+                "value": main_row["value"],
+                "state_value": last_selector_state if has_selector_state else None,
+            }
+        )
+
+    return merged
 
 
 async def get_flow_by_system(

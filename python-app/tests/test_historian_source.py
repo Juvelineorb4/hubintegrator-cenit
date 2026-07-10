@@ -8,6 +8,8 @@ from unittest.mock import patch
 import httpx
 
 from app.services.flow_query import get_flow_by_system
+from app.services.flow_query import _merge_main_and_selector
+from app.services.flow_query import _rows_by_tagname
 from app.services.odbc_historian_client import OdbcHistorianClient
 from app.services.pressure_query import get_pressure_by_system
 from app.services.volume_query import get_volume_by_system
@@ -60,6 +62,107 @@ class FakeOdbcClient:
 
 
 class HistorianSourceTests(IsolatedAsyncioTestCase):
+    def test_flow_merge_equal_length(self):
+        main = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+        ]
+        selector = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 1},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 0},
+        ]
+
+        merged = _merge_main_and_selector(main, selector)
+        self.assertEqual([r["state_value"] for r in merged], [1, 0])
+
+    def test_flow_merge_selector_one_point_less(self):
+        main = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+            {"timestamp": "2026-01-01T00:02:00Z", "value": 12},
+        ]
+        selector = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 1},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 0},
+        ]
+
+        merged = _merge_main_and_selector(main, selector)
+        self.assertEqual([r["state_value"] for r in merged], [1, 0, 0])
+
+    def test_flow_merge_selector_one_point_more(self):
+        main = [
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+            {"timestamp": "2026-01-01T00:02:00Z", "value": 12},
+        ]
+        selector = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 1},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 0},
+            {"timestamp": "2026-01-01T00:03:00Z", "value": 1},
+        ]
+
+        merged = _merge_main_and_selector(main, selector)
+        self.assertEqual([r["state_value"] for r in merged], [0, 0])
+
+    def test_flow_merge_unsorted_rows(self):
+        main = [
+            {"timestamp": "2026-01-01T00:02:00Z", "value": 12},
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+        ]
+        selector = [
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 0},
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 1},
+        ]
+
+        merged = _merge_main_and_selector(main, selector)
+        self.assertEqual([r["timestamp"] for r in merged], [
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:01:00Z",
+            "2026-01-01T00:02:00Z",
+        ])
+        self.assertEqual([r["state_value"] for r in merged], [1, 0, 0])
+
+    def test_flow_merge_absence_of_selector(self):
+        main = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+        ]
+
+        merged = _merge_main_and_selector(main, None)
+        self.assertEqual([r["state_value"] for r in merged], [None, None])
+
+    def test_flow_merge_selector_state_change_one_to_zero(self):
+        main = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"timestamp": "2026-01-01T00:01:00Z", "value": 11},
+            {"timestamp": "2026-01-01T00:02:00Z", "value": 12},
+        ]
+        selector = [
+            {"timestamp": "2026-01-01T00:00:00Z", "value": 1},
+            {"timestamp": "2026-01-01T00:02:00Z", "value": 0},
+        ]
+
+        merged = _merge_main_and_selector(main, selector)
+        self.assertEqual([r["state_value"] for r in merged], [1, 1, 0])
+
+    def test_rows_by_tagname_sorts_each_group(self):
+        rows = [
+            {"tagname": "FI_1", "timestamp": "2026-01-01T00:02:00Z", "value": 12},
+            {"tagname": "FI_1", "timestamp": "2026-01-01T00:00:00Z", "value": 10},
+            {"tagname": "FI_2", "timestamp": "2026-01-01T00:01:00Z", "value": 21},
+            {"tagname": "FI_2", "timestamp": "2026-01-01T00:00:00Z", "value": 20},
+        ]
+
+        grouped = _rows_by_tagname(rows)
+        self.assertEqual([r["timestamp"] for r in grouped["FI_1"]], [
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:02:00Z",
+        ])
+        self.assertEqual([r["timestamp"] for r in grouped["FI_2"]], [
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:01:00Z",
+        ])
+
     async def test_postgres_pressure_keeps_current_flow(self):
         tags_response = _response(
             200,
