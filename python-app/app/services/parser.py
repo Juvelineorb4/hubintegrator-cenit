@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 
 VALID_SYSTEM_TYPES = {"OLEODUCTO", "POLIDUCTO"}
-VALID_CATEGORIES   = {"FLOW", "PRESSURE", "LEVEL", "SELECTOR_S_E"}
+VALID_CATEGORIES   = {"FLOW", "PRESSURE", "LEVEL", "SELECTOR_S_E", "PRESSURE_IN", "PRESSURE_OUT", "FLOW_IN", "FLOW_OUT", "VOLUME", "PRESSURE_IN_MAX", "PRESSURE_OUT_MAX"}
 
 
 def _clean(val: Any) -> Any:

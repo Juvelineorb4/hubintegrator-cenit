@@ -1,0 +1,7 @@
+services:
+  python-app:
+    image: v030-python-app:rc5
+    environment:
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}

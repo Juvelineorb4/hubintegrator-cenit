@@ -1,0 +1,8 @@
+services:
+  python-app:
+    image: v030-python-app:rc2
+    environment:
+      HISTORIAN_SOURCE: ${HISTORIAN_SOURCE:-postgres}
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
