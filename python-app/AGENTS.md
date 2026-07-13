@@ -82,45 +82,45 @@ Base URL: `http://localhost:8000`
 ### `/tag-values/time-sampled` flow (`tag_query.py`)
 
 Fetches and resamples raw values for a single tag:
-1. `GET BACKEND/tag-values/raw?tagname=&start=&end=` → raw rows from PostgreSQL
+1. `GET BACKEND/tag-values/raw?tagname=&start=&end=` → raw rows from app-backend
 2. pandas `resample()` on UTC-aware DatetimeIndex, `mean()` per bucket
 3. Returns `TimeSampledResponse` with `data: [{timestamp, value}]`
 
 ### `/tag-values/pressureBySystem` flow (`pressure_query.py`)
 
-Fetches pressure tags for a system and returns resampled values via PostgreSQL:
+Fetches pressure tags for a system and returns resampled values via ODBC:
 1. `GET BACKEND/tags/pressure?systemCode=X` → all tags with categories PRESSURE_IN / PRESSURE_OUT / PRESSURE_IN_MAX / PRESSURE_OUT_MAX
 2. Input timestamps are interpreted as **Colombia time (UTC-5)** and converted to UTC internally
-3. `POST BACKEND/tag-values/batch/historized` with all tagnames, UTC start/end, and `intervalSeconds` → backend generates the time grid and fills last-known values in SQL
+3. `GET ODBC_API/tags/interval` via `OdbcHistorianClient.fetch_interval_rows()` using all tagnames, UTC start/end, and `interval_seconds`
 4. Groups returned rows by tagname; picks first non-null of `valueDouble` / `valueText` / `valueBoolean`
 5. Pairs each PRESSURE_IN / PRESSURE_OUT tag with its MAX companion (same system + subsystem)
 6. Returns `PressureQueryResponse`; timestamps are UTC ISO 8601 strings (`"2026-04-13T17:35:42Z"`)
 
-> No pandas or raw-row fetching. All resampling is done by the backend.
+> No pandas or backend historization endpoint. Historical reads come from ODBC API `/tags/interval`.
 
 ### `/tag-values/flowBySystem` flow (`flow_query.py`)
 
 Fetches flow tags for a system, returns resampled values, and pairs each main tag with its SELECTOR_S_E companion:
 1. `GET BACKEND/tags/flow?systemCode=X` → all tags with categories FLOW_IN, FLOW_OUT, SELECTOR_S_E
 2. Input timestamps are interpreted as **Colombia time (UTC-5)** and converted to UTC internally
-3. `POST BACKEND/tag-values/batch/historized` with all tagnames, UTC start/end, and `intervalSeconds`
+3. `GET ODBC_API/tags/interval` via `OdbcHistorianClient.fetch_interval_rows()` using all tagnames, UTC start/end, and `interval_seconds`
 4. Groups rows by tagname; picks first non-null value column
 5. Each FLOW_IN / FLOW_OUT tag is paired with the SELECTOR_S_E tag from the same system+subsystem
 6. Returns `FlowQueryResponse`; each `TagFlowData` entry has `tagname_selector` / `category_selector` fields and `data: [{timestamp, value, state_value}]`
 
-> No pandas or raw-row fetching. All resampling is done by the backend.
+> No pandas or backend historization endpoint. Historical reads come from ODBC API `/tags/interval`.
 
 ### `/tag-values/volumeBySystem` flow (`volume_query.py`)
 
 Fetches volume tags for a system and returns only change-point values (no resampling):
 1. `GET BACKEND/tags/volume?systemCode=X` → all tags with category VOLUME
 2. Input timestamps are interpreted as **Colombia time (UTC-5)** and converted to UTC internally
-3. `POST BACKEND/tag-values/raw/batch` with all tagnames, UTC start/end — single request for all tags
+3. `GET ODBC_API/tags` via `OdbcHistorianClient.fetch_raw_rows()` with all tagnames, UTC start/end
 4. Groups rows by tagname; picks first non-null value column
 5. `_change_points()` keeps only rows where the value changed from the previous sample
 6. Returns `VolumeQueryResponse`; each `TagVolumeData` entry has `data: [{timestamp, value}]` — **no `interval_seconds` parameter**
 
-> No pandas. Uses `/raw/batch` (not `/batch/historized`) because no resampling grid is needed.
+> No pandas. Uses ODBC API `/tags` raw reads because no resampling grid is needed.
 
 ## Excel Format (3 sheets)
 
@@ -155,12 +155,12 @@ Fetches volume tags for a system and returns only change-point values (no resamp
 | category              | ❌       | `FLOW`, `FLOW_IN`, `FLOW_OUT`, `VOLUME`, `PRESSURE`, `PRESSURE_IN`, `PRESSURE_OUT`, `LEVEL`, `SELECTOR_S_E`, `PRESSURE_IN_MAX`, `PRESSURE_OUT_MAX` |
 | system                | ✅       | System name (must exist in DB or same Excel)                        |
 | subsystem             | ❌       | Subsystem nomenclature                                              |
-| historical_from_date  | ❌       | Start date for ETL historization (e.g., `2024-01-01`)               |
-| historical_from_hour  | ❌       | Start time for ETL historization (e.g., `00:00:00`). Defaults to `00:00:00` if date is set |
+| historical_from_date  | ❌       | Legacy metadata date field (e.g., `2024-01-01`)                      |
+| historical_from_hour  | ❌       | Legacy metadata hour field (e.g., `00:00:00`). Defaults to `00:00:00` if date is set |
 
 > PHD fields (`phdTagno`, `phdUnit`, `phdDataTypeName`, `phdAssetName`, `phdDescription`) are enriched automatically via `GET /tags/{tagname}/browse` on the ODBC API.
 
-> `historical_from_date` + `historical_from_hour` are combined into `historizationFrom` (ISO timestamp) and saved on the tag. A PostgreSQL trigger (`trg_tag_etl_state_on_insert`) reads this value to initialize `tag_etl_state.last_loaded_data_timestamp`. If empty, falls back to `created_at`.
+> `historical_from_date` + `historical_from_hour` are combined into `historizationFrom` (ISO timestamp) and saved on the tag as legacy metadata.
 
 ## Timestamp Contract
 

@@ -12,7 +12,6 @@ v1/
 ├── .env                    # Shared Docker environment variables
 ├── app-backend/            # Node.js REST API (Express + Drizzle + PostgreSQL) — Docker
 ├── python-app/             # Python service (FastAPI) — Docker
-├── python-etl/             # Python ETL service — historian → PostgreSQL batch pipeline — Docker
 └── odbc-api/               # Node.js REST API (Express + ODBC) — Native Windows, NO Docker
 ```
 
@@ -25,7 +24,6 @@ v1/
 | postgres     | 5432 | PostgreSQL 16 Alpine    | Primary database                                    |
 | app-backend  | 3000 | Node 20, Express 4, TS  | REST API, DB schemas, data ingestion                |
 | python-app   | 8000 | Python 3.12, FastAPI    | Data processing / auxiliary service                 |
-| python-etl   | —    | Python 3.12             | ETL service — historian → PostgreSQL batch pipeline |
 
 ### Native Windows service (NOT in Docker)
 
@@ -44,21 +42,12 @@ v1/
 | POSTGRES_USER     | myuser      | DB superuser for Docker container |
 | POSTGRES_PASSWORD | 123456789   | DB superuser password             |
 
-### `v1/python-etl/.env` (ETL service — local dev)
+### `v1/python-app/.env` (local dev)
 | Variable                    | Value                      | Purpose                                                         |
 |-----------------------------|----------------------------|-----------------------------------------------------------------|
-| POSTGRES_HOST               | localhost                  | PostgreSQL host (use `postgres` inside Docker)                  |
-| POSTGRES_PORT               | 5432                       | PostgreSQL port                                                 |
-| POSTGRES_DB                 | devdb                      | Database name                                                   |
-| POSTGRES_USER               | myuser                     | DB user                                                         |
-| POSTGRES_PASSWORD           | 123456789                  | DB password                                                     |
 | ODBC_API_URL                | http://localhost:1234      | Base URL of the odbc-api historian bridge (port from `app.js`)  |
-| ETL_INTERVAL_SECONDS        | 60                         | Seconds between scheduler cycles                                |
-| HISTORICAL_CHUNK_HOURS      | 1                          | Hours loaded per historical backfill chunk (one chunk per cycle) |
-| HISTORICAL_TRANSITION_HOURS | 1                          | Hours before NOW() to auto-switch tag from HISTORICAL→INCREMENTAL |
-| HISTORIAN_TIMEZONE          | UTC                        | IANA timezone for historian timestamps                          |
 
-> **Inside Docker:** set `POSTGRES_HOST=postgres` and `ODBC_API_URL=http://host.docker.internal:1234` (already injected by `docker-compose.yml`). For local dev runs (`python -m src.main`), use `localhost` for both.
+> **Inside Docker:** set `ODBC_API_URL=http://host.docker.internal:1234` (already injected by `docker-compose.yml`). For local dev runs, use `localhost`.
 
 ### `v1/app-backend/.env` (local dev level)
 | Variable     | Value                                              | Purpose                                  |
@@ -87,7 +76,6 @@ docker compose ps
 # View logs for a specific service
 docker compose logs app-backend
 docker compose logs python-app
-docker compose logs python-etl
 docker compose logs postgres
 
 # Rebuild images after Dockerfile changes
@@ -128,7 +116,7 @@ pnpm seed:demo
 ```
 
 ### `odbc-api` is never in Docker
-The PHD ODBC driver requires Windows and a locally configured DSN. `odbc-api` runs as a native Node.js process on the Windows host at `http://localhost:1234` (port defined in `odbc-api/app.js`, overridable via `PORT` env var). From inside Docker containers it is reached via `http://host.docker.internal:1234`, which is what `docker-compose.yml` injects as `ODBC_API_URL` for the `python-etl` service.
+The PHD ODBC driver requires Windows and a locally configured DSN. `odbc-api` runs as a native Node.js process on the Windows host at `http://localhost:1234` (port defined in `odbc-api/app.js`, overridable via `PORT` env var). From inside Docker containers it is reached via `http://host.docker.internal:1234`, which is what `docker-compose.yml` injects as `ODBC_API_URL` for `python-app`.
 
 ## Boundaries
 
@@ -174,13 +162,12 @@ docker pull postgres:16-alpine
 
 # Verificar que las 4 imágenes existen
 docker images
-# Deben aparecer: postgres:16-alpine, v1-app-backend, v1-python-app, v1-python-etl
+# Deben aparecer: postgres:16-alpine, v1-app-backend, v1-python-app
 
 # Exportar cada imagen a un archivo .tar
 docker save postgres:16-alpine -o postgres-16-alpine.tar
 docker save v1-app-backend     -o app-backend.tar
 docker save v1-python-app      -o python-app.tar
-docker save v1-python-etl      -o python-etl.tar
 ```
 
 > Los nombres `v1-app-backend` y `v1-python-app` los asigna Docker Compose según el nombre de la carpeta raíz. Verificar con `docker images` antes de exportar.
@@ -192,13 +179,11 @@ pendrive/
   postgres-16-alpine.tar     ← imagen postgres
   app-backend.tar            ← imagen app-backend
   python-app.tar             ← imagen python-app
-  python-etl.tar             ← imagen python-etl
   v1/                        ← carpeta del proyecto completa
     docker-compose.yml
     .env                     ← ajustar credenciales para ese entorno
     app-backend/             ← sin node_modules (van dentro del contenedor)
     python-app/
-    python-etl/
 ```
 
 > **No copiar `node_modules`** del host — las dependencias ya están dentro de las imágenes exportadas.
@@ -212,7 +197,6 @@ pendrive/
 docker load -i postgres-16-alpine.tar
 docker load -i app-backend.tar
 docker load -i python-app.tar
-docker load -i python-etl.tar
 
 # Verificar que cargaron correctamente
 docker images
@@ -261,10 +245,10 @@ Primero identificar qué cambió para saber qué hacer:
 
 ```powershell
 # En la máquina con internet — reconstruir solo el servicio cambiado
-docker compose build app-backend   # o python-app, o python-etl
+docker compose build app-backend   # o python-app
 
 # Re-exportar solo esa imagen
-docker save v1-app-backend -o app-backend.tar   # o python-app.tar / python-etl.tar
+docker save v1-app-backend -o app-backend.tar   # o python-app.tar
 
 # En el nodo sin internet — cargar y reiniciar
 docker load -i app-backend.tar

@@ -23,7 +23,7 @@ The system integrates with the **POSOS-GALAN industrial complex**, comprising fo
 ### Core Capabilities
 - **PostgreSQL Data Layer** – Persistent storage with normalized hierarchical schema
 - **Hierarchical Tag Organization** – SYSTEM → SUBSYSTEM → TAG model for scalable data management
-- **Real-time Data Integration** – ETL pipeline querying PHD SHADOW database and materializing data to PostgreSQL
+- **Real-time Data Integration** – Direct historian reads via ODBC API bridge
 - **RESTful API Layer** – Query-based endpoints for historical and real-time data retrieval
 - **ODBC Connectivity** – Direct integration with PHD historian via ODBC protocol
 
@@ -43,7 +43,6 @@ Docker Compose Orchestration
 ├── PostgreSQL 16 (alpine)          [Data persistence]
 ├── Node.js Backend v20 (alpine)    [Core orchestration & ODBC bridge]
 ├── Python API Service (3.12 alpine) [RESTful API layer]
-├── Python ETL Service (3.12 slim)  [Historical data synchronization]
 └── ODBC API Bridge (Node.js)        [PHD SHADOW connection]
 ```
 
@@ -52,10 +51,6 @@ Docker Compose Orchestration
 PHD SHADOW ODBC
     ↓
 ODBC API Bridge (Node.js)
-    ↓
-Python ETL Service / Node.js Backend
-    ↓
-PostgreSQL 16
     ↓
 Python API Service
     ↓
@@ -68,7 +63,6 @@ Client Applications
 | Database | PostgreSQL 16 | Normalized data storage and indexing |
 | Backend Orchestration | Node.js 20 + Express | ODBC driver integration & routing |
 | API Service | FastAPI (Python 3.12) | REST endpoints & data queries |
-| ETL Engine | Python 3.12 | Scheduled data extraction & transformation |
 | Containerization | Docker Compose | Multi-service orchestration |
 | Connectivity | ODBC | PHD historian protocol |
 
@@ -103,9 +97,6 @@ ODBC_PASSWORD=historian_password
 # API Services
 API_PORT=8000
 BACKEND_PORT=3000
-
-# ETL Schedule (cron format)
-ETL_INTERVAL=300  # seconds (5 minutes)
 
 # Environment
 NODE_ENV=production
@@ -401,5 +392,6 @@ For deployment issues, architecture inquiries, or feature requests, consult the 
 **License:** [Specify if applicable]  
 **Maintainer:** CENIT Development Team  
 **Status:** Active Development
-#   h u b i n t e g r a t o r - c e n i t  
+#   h u b i n t e g r a t o r - c e n i t 
+ 
  

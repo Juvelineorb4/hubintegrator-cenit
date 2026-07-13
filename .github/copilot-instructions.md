@@ -6,7 +6,7 @@
 - `odbc-api` runs natively on a separate Windows host because the PHD ODBC driver is Windows-only.
 - Never add `odbc-api` to Docker Compose.
 - In production, Linux containers must reach the Windows bridge through `ODBC_API_URL` using an approved DNS name or IP address. Do not assume `localhost` or `host.docker.internal`.
-- PostgreSQL, `app-backend`, `python-app`, `python-etl`, Redis, and future Grafana services run in Docker on Linux.
+- PostgreSQL, `app-backend`, `python-app`, Redis, and future Grafana services run in Docker on Linux.
 - The target environment has no internet access. Runtime deployment must not download packages or images.
 
 ## Data safety
