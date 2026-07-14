@@ -4,6 +4,9 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas.tag_query import TimeSampledResponse
 from app.services.tag_query import get_time_sampled
+from app.services.tag_query import TagQueryInvalidRequestError
+from app.services.tag_query import TagQueryTimeoutError
+from app.services.tag_query import TagQueryUpstreamError
 
 router = APIRouter(prefix="/tag-values", tags=["tag-values"])
 
@@ -24,8 +27,14 @@ async def time_sampled(
 
     try:
         data = await get_time_sampled(tagname, start, end, interval_seconds)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Error consultando backend: {exc}")
+    except TagQueryInvalidRequestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except TagQueryTimeoutError as exc:
+        raise HTTPException(status_code=504, detail=str(exc))
+    except TagQueryUpstreamError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error interno inesperado")
 
     return TimeSampledResponse(
         tagname=tagname,
