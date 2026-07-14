@@ -40,3 +40,27 @@ export type CreateSystemGroupMemberInput = {
   systemId: string;
   displayOrder: number;
 };
+
+export type UpdateSystemGroupInput = {
+  name?: string;
+  description?: string | null;
+  displayOrder?: number;
+  id?: never;
+};
+
+export type UpdateSystemGroupMemberInput = {
+  systemId?: string;
+  displayOrder?: number;
+  groupId?: never;
+  memberId?: never;
+};
+
+export type SystemGroupSummaryItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  memberCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
