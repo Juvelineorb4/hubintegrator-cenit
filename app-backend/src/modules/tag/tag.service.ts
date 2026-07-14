@@ -28,4 +28,8 @@ export class TagService {
   updateById(id: string, data: Parameters<TagRepository["updateById"]>[1]) {
     return this.repo.updateById(id, data);
   }
+
+  deleteById(id: string) {
+    return this.repo.deleteById(id);
+  }
 }

@@ -1,6 +1,6 @@
 import { and, eq, asc, sql } from "drizzle-orm";
 import { DrizzleDB } from "../../core/db/drizzle/client";
-import { phdSubsystem, phdSystemEntity, phdSystemSubsystem } from "../../core/db/drizzle/schema/phd.schema";
+import { phdSubsystem, phdSystemEntity, phdSystemSubsystem, phdTag } from "../../core/db/drizzle/schema/phd.schema";
 import { HttpError } from "../../shared/errors/http-error";
 import { mapPgErrorToHttp } from "../../shared/errors/pg-error";
 
@@ -387,5 +387,53 @@ export class SubSystemRepository {
     } catch (error) {
       throw mapPgErrorToHttp(error, "System/sub-system relation already exists");
     }
+  }
+
+  async deleteById(id: string) {
+    const [existing] = await this.db
+      .select({ id: phdSubsystem.id })
+      .from(phdSubsystem)
+      .where(eq(phdSubsystem.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "Sub-system not found");
+    }
+
+    const [hasRelations] = await this.db
+      .select({ id: phdSystemSubsystem.id })
+      .from(phdSystemSubsystem)
+      .where(eq(phdSystemSubsystem.subsystemId, id))
+      .limit(1);
+
+    if (hasRelations) {
+      throw new HttpError(409, "Sub-system has system relations");
+    }
+
+    await this.db.delete(phdSubsystem).where(eq(phdSubsystem.id, id));
+  }
+
+  async deleteRelationById(id: string) {
+    const [existing] = await this.db
+      .select({ id: phdSystemSubsystem.id })
+      .from(phdSystemSubsystem)
+      .where(eq(phdSystemSubsystem.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "System/sub-system relation not found");
+    }
+
+    const [hasTags] = await this.db
+      .select({ id: phdTag.id })
+      .from(phdTag)
+      .where(eq(phdTag.systemSubsystemId, id))
+      .limit(1);
+
+    if (hasTags) {
+      throw new HttpError(409, "System/sub-system relation has tags");
+    }
+
+    await this.db.delete(phdSystemSubsystem).where(eq(phdSystemSubsystem.id, id));
   }
 }

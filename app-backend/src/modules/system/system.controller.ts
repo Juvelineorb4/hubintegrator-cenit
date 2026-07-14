@@ -61,4 +61,15 @@ export class SystemController {
       res.status(httpError.statusCode).json({ success: false, message });
     }
   };
+
+  deleteById = async (req: Request, res: Response): Promise<void> => {
+    try {
+      await this.service.deleteById(req.params.id as string);
+      res.status(204).send();
+    } catch (error) {
+      const httpError = toSafeHttpError(error);
+      const message = httpError.expose ? httpError.message : "Internal server error";
+      res.status(httpError.statusCode).json({ success: false, message });
+    }
+  };
 }

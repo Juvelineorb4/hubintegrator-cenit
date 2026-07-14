@@ -30,4 +30,12 @@ export class SubSystemService {
   updateRelationById(id: string, data: Parameters<SubSystemRepository["updateRelationById"]>[1]) {
     return this.repo.updateRelationById(id, data);
   }
+
+  deleteById(id: string) {
+    return this.repo.deleteById(id);
+  }
+
+  deleteRelationById(id: string) {
+    return this.repo.deleteRelationById(id);
+  }
 }

@@ -15,4 +15,5 @@ systemRouter.get("/",              controller.getAll);
 systemRouter.get("/by-name/:name", controller.getByName);
 systemRouter.get("/:id",           controller.getById);
 systemRouter.patch("/:id",         controller.updateById);
+systemRouter.delete("/:id",        controller.deleteById);
 systemRouter.post("/",             controller.create);

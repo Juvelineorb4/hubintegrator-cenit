@@ -412,4 +412,18 @@ export class TagRepository {
       throw mapPgErrorToHttp(error, "Tag already exists");
     }
   }
+
+  async deleteById(id: string) {
+    const [existing] = await this.db
+      .select({ id: phdTag.id })
+      .from(phdTag)
+      .where(eq(phdTag.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "Tag not found");
+    }
+
+    await this.db.delete(phdTag).where(eq(phdTag.id, id));
+  }
 }

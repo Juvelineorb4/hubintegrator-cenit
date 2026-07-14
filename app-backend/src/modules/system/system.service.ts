@@ -22,4 +22,8 @@ export class SystemService {
   updateById(id: string, data: Parameters<SystemRepository["updateById"]>[1]) {
     return this.repo.updateById(id, data);
   }
+
+  deleteById(id: string) {
+    return this.repo.deleteById(id);
+  }
 }

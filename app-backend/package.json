@@ -17,6 +17,7 @@
         "test:phase2a": "tsx src/tests/phase2a-read.integration.test.ts",
         "test:phase2b": "tsx src/tests/phase2b-write.integration.test.ts",
         "test:phase2c": "tsx src/tests/phase2c-update.integration.test.ts",
+        "test:phase2d": "tsx src/tests/phase2d-delete.integration.test.ts",
         "explain:phase2a": "tsx scripts/phase2a-explain.ts",
         "db:studio": "drizzle-kit studio",
         "seed:partitions": "tsx src/core/db/drizzle/seeds/partitions.seed.ts",

@@ -15,6 +15,8 @@ subSystemRouter.get("/",                             controller.getAll);
 subSystemRouter.get("/by-nomenclature/:nomenclature", controller.getByNomenclature);
 subSystemRouter.get("/:id",                          controller.getById);
 subSystemRouter.patch("/relations/:id",              controller.updateRelationById);
+subSystemRouter.delete("/relations/:id",             controller.deleteRelationById);
 subSystemRouter.patch("/:id",                        controller.updateById);
+subSystemRouter.delete("/:id",                       controller.deleteById);
 subSystemRouter.post("/",                            controller.create);
 subSystemRouter.post("/relations",                   controller.createRelation);

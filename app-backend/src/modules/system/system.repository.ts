@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { DrizzleDB } from "../../core/db/drizzle/client";
-import { phdSystemEntity } from "../../core/db/drizzle/schema/phd.schema";
+import { phdSystemEntity, phdSystemGroupMember, phdSystemSubsystem } from "../../core/db/drizzle/schema/phd.schema";
 import { HttpError } from "../../shared/errors/http-error";
 import { mapPgErrorToHttp } from "../../shared/errors/pg-error";
 
@@ -183,5 +183,39 @@ export class SystemRepository {
     } catch (error) {
       throw mapPgErrorToHttp(error, "System already exists");
     }
+  }
+
+  async deleteById(id: string) {
+    const [existing] = await this.db
+      .select({ id: phdSystemEntity.id })
+      .from(phdSystemEntity)
+      .where(eq(phdSystemEntity.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HttpError(404, "System not found");
+    }
+
+    const [hasSubSystems] = await this.db
+      .select({ id: phdSystemSubsystem.id })
+      .from(phdSystemSubsystem)
+      .where(eq(phdSystemSubsystem.systemId, id))
+      .limit(1);
+
+    if (hasSubSystems) {
+      throw new HttpError(409, "System has related sub-systems");
+    }
+
+    const [hasGroupMembership] = await this.db
+      .select({ id: phdSystemGroupMember.id })
+      .from(phdSystemGroupMember)
+      .where(eq(phdSystemGroupMember.systemId, id))
+      .limit(1);
+
+    if (hasGroupMembership) {
+      throw new HttpError(409, "System belongs to one or more groups");
+    }
+
+    await this.db.delete(phdSystemEntity).where(eq(phdSystemEntity.id, id));
   }
 }
