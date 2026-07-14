@@ -12,6 +12,7 @@ import {
   ImportSummary,
   ImportValidationError,
   NormalizedCatalogRow,
+  PhdMetadataSummary,
   NormalizedSystemGroupRow,
   NormalizedWorkbook,
   ValidationIssue,
@@ -27,7 +28,8 @@ export class PhdImportRepository {
   async importCatalog(
     tx: DrizzleDB,
     workbook: NormalizedWorkbook,
-    dryRun: boolean
+    dryRun: boolean,
+    phdMetadata: PhdMetadataSummary
   ): Promise<ImportSummary> {
     const rows = workbook.catalogRows;
     const systemGroupRows = workbook.systemGroupRows;
@@ -41,6 +43,7 @@ export class PhdImportRepository {
       tags: { created: 0, updated: 0, skipped: 0 },
       groups: { created: 0, updated: 0, skipped: 0 },
       groupMembers: { created: 0, updated: 0, skipped: 0 },
+      phdMetadata,
       errors: [],
     };
 

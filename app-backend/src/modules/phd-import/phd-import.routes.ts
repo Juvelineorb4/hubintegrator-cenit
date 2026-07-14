@@ -1,5 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
+import { PhdMetadataClient } from "./phd-metadata.client";
+import { resolvePhdMetadataConfig } from "./phd-metadata.config";
 import { PhdImportController } from "./phd-import.controller";
 import { PhdImportParser } from "./phd-import.parser";
 import { PhdImportValidator } from "./phd-import.validator";
@@ -9,7 +11,16 @@ import { PhdImportService } from "./phd-import.service";
 const parser = new PhdImportParser();
 const validator = new PhdImportValidator();
 const repository = new PhdImportRepository();
-const service = new PhdImportService(parser, validator, repository);
+const metadataConfig = resolvePhdMetadataConfig(process.env);
+const metadataClient =
+  metadataConfig.mode === "disabled"
+    ? null
+    : new PhdMetadataClient({
+        baseUrl: metadataConfig.odbcApiUrl,
+        connectTimeoutSeconds: metadataConfig.connectTimeoutSeconds,
+        readTimeoutSeconds: metadataConfig.readTimeoutSeconds,
+      });
+const service = new PhdImportService(parser, validator, repository, metadataConfig, metadataClient);
 const controller = new PhdImportController(service);
 
 const upload = multer({

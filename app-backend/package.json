@@ -19,6 +19,7 @@
         "test:phase3a": "tsx src/tests/phase3a-system-group.integration.test.ts",
         "test:phase3b": "tsx src/tests/phase3b-system-group-update-delete.integration.test.ts",
         "test:phase5b": "tsx src/tests/phase5b-import-system-groups.integration.test.ts",
+        "test:phase5c": "tsx src/tests/phase5c-phd-metadata.integration.test.ts",
         "explain:phase2a": "tsx scripts/phase2a-explain.ts",
         "db:studio": "drizzle-kit studio --config=drizzle.phd.config.ts"
     },

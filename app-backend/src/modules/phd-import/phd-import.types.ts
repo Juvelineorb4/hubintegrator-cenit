@@ -38,6 +38,28 @@ export type ValidationIssue = {
   reason: string;
 };
 
+export type PhdMetadataMode = "disabled" | "optional" | "required";
+
+export type PhdMetadataFieldNullSummary = {
+  phdTagno: number;
+  phdUnit: number;
+  phdDataTypeName: number;
+  phdAssetName: number;
+  phdDescription: number;
+};
+
+export type PhdMetadataSummary = {
+  mode: PhdMetadataMode;
+  tagsRequested: number;
+  tagsFound: number;
+  tagsNotFound: number;
+  complete: number;
+  partial: number;
+  failed: number;
+  fieldsNull: PhdMetadataFieldNullSummary;
+  warnings: string[];
+};
+
 export class ImportValidationError extends HttpError {
   readonly errors: ValidationIssue[];
 
@@ -135,5 +157,6 @@ export type ImportSummary = {
   tags: { created: number; updated: number; skipped: number };
   groups: { created: number; updated: number; skipped: number };
   groupMembers: { created: number; updated: number; skipped: number };
+  phdMetadata: PhdMetadataSummary;
   errors: ValidationIssue[];
 };
