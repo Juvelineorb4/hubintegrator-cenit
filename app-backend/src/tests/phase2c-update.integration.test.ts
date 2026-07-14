@@ -428,25 +428,10 @@ async function run() {
       public_tag_table: string | null;
     };
 
-    if (publicRow.public_system_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_entity WHERE id = $1", [systemA.id]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_subsystem_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.sub_system WHERE id = $1", [subA.id]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_relation_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_sub_system WHERE id = $1", [relationA!.id]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_tag_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.tag WHERE id = $1", [tagA.id]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
+    assert.equal(publicRow.public_system_table, null);
+    assert.equal(publicRow.public_subsystem_table, null);
+    assert.equal(publicRow.public_relation_table, null);
+    assert.equal(publicRow.public_tag_table, null);
 
     console.log("phase2c-http-errors", JSON.stringify({
       systemInvalidType: systemPatchInvalidType.status,

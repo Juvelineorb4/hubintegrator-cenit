@@ -455,36 +455,10 @@ async function run() {
       public_tag_table: string | null;
     };
 
-    if (publicRow.public_system_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_entity WHERE code IN ($1, $2)", [systemCodeA, systemCodeB]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_subsystem_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.sub_system WHERE code IN ($1, $2, $3)", [subCodeA, subCodeB, subCodeC]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_relation_table) {
-      const relRows = await db
-        .select({ id: phdSystemSubsystem.id })
-        .from(phdSystemSubsystem)
-        .where(
-          and(
-            inArray(phdSystemSubsystem.systemId, (await db.select({ id: phdSystemEntity.id }).from(phdSystemEntity).where(inArray(phdSystemEntity.code, [systemCodeA, systemCodeB]))).map((x) => x.id)),
-            inArray(phdSystemSubsystem.subsystemId, (await db.select({ id: phdSubsystem.id }).from(phdSubsystem).where(inArray(phdSubsystem.code, [subCodeA, subCodeB, subCodeC]))).map((x) => x.id))
-          )
-        );
-      if (relRows.length) {
-        const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_sub_system WHERE id = ANY($1)", [relRows.map((r) => r.id)]);
-        assert.equal(Number(check.rows[0].c), 0);
-      }
-    }
-
-    if (publicRow.public_tag_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.tag WHERE tagname IN ($1, $2, $3)", [tagA, tagB, tagC]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
+    assert.equal(publicRow.public_system_table, null);
+    assert.equal(publicRow.public_subsystem_table, null);
+    assert.equal(publicRow.public_relation_table, null);
+    assert.equal(publicRow.public_tag_table, null);
 
     console.log("phase2e-http-results", JSON.stringify({
       importValid: importResult.status,

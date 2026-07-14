@@ -378,39 +378,10 @@ async function run() {
       public_tag_table: string | null;
     };
 
-    if (publicRow.public_system_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_entity WHERE id IN ($1, $2, $3)", [
-        sysNoDeps.id,
-        sysWithRel.id,
-        sysWithGroup.id,
-      ]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_subsystem_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.sub_system WHERE id IN ($1, $2, $3)", [
-        subNoRel.id,
-        subWithRel.id,
-        subOther.id,
-      ]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_relation_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.system_sub_system WHERE id IN ($1, $2)", [
-        relNoTags.id,
-        relWithTags.id,
-      ]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
-
-    if (publicRow.public_tag_table) {
-      const check = await pool.query("SELECT COUNT(*)::int AS c FROM public.tag WHERE id IN ($1, $2)", [
-        tagDeleteTarget.id,
-        tagControl.id,
-      ]);
-      assert.equal(Number(check.rows[0].c), 0);
-    }
+    assert.equal(publicRow.public_system_table, null);
+    assert.equal(publicRow.public_subsystem_table, null);
+    assert.equal(publicRow.public_relation_table, null);
+    assert.equal(publicRow.public_tag_table, null);
 
     console.log("phase2d-http-results", JSON.stringify({
       deleteTag: deleteTagOk.status,
