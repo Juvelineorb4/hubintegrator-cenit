@@ -17,7 +17,7 @@
 ```
 app-backend/
 ├── Dockerfile
-├── drizzle.config.ts          # Schema list (tag-value excluded — see below)
+├── drizzle.phd.config.ts      # Official Drizzle config for schema `phd`
 ├── package.json
 ├── tsconfig.json
 └── src/
@@ -42,30 +42,17 @@ app-backend/
     │   │   ├── tag.service.ts
     │   │   ├── tag.controller.ts
     │   │   └── tag.routes.ts       # DI wiring + Router; GET /pressure registered before /:id
-    │   └── tag-value/
-    │       ├── tag-value.repository.ts
-    │       ├── tag-value.service.ts
-    │       ├── tag-value.controller.ts
-    │       └── tag-value.routes.ts
     └── core/
         └── db/
             └── drizzle/
                 ├── client.ts             # Drizzle + pg client — exports DrizzleDB type
                 ├── config.ts             # DB config loader
                 ├── index.ts              # Re-exports
-                ├── setup.ts             # Creates tag_value partitioned table + ETL trigger (idempotent)
                 ├── schema/
                 │   ├── index.ts
-                │   ├── system-entity.schema.ts
-                │   ├── sub-system.schema.ts
-                │   ├── system-sub-system.schema.ts
-                │   ├── tag.schema.ts
-                │   ├── tag-etl-state.schema.ts
-                │   ├── etl-scheduler-state.schema.ts
-                │   └── tag-value.schema.ts   # Reference only — NOT in drizzle.config.ts
+                │   └── phd.schema.ts     # Single active domain model
                 └── seeds/
-                    ├── demo.seed.ts          # Loads sample system, sub-system, tag
-                    └── partitions.seed.ts    # Partition range creation
+                    └── phd-demo.seed.ts  # Approved phd demo seed
 ```
 
 ## Development Commands
@@ -77,43 +64,30 @@ pnpm install
 # Start dev server with hot reload
 pnpm dev
 
-# Push schema changes to the database + create tag_value partitioned table
-pnpm db:push
+# Use only the phd configuration and approved phd seed
+pnpm db:phd:push
+pnpm db:phd:seed
 
-# Only run setup.ts (create tag_value + current month partition)
-pnpm db:setup
-
-# Open Drizzle Studio (visual DB browser)
+# Open Drizzle Studio against the phd config
 pnpm db:studio
-
-# Create partitions for a date range (configure FROM/TO inside the file)
-pnpm seed:partitions
 ```
 
 ## Database Schema
 
-### Tables managed by Drizzle Kit (`db:push`)
+### Tables managed by Drizzle Kit (`db:phd:push`)
 
-| Table                | Description                                      |
-|----------------------|--------------------------------------------------|
-| system_entity        | Top-level systems — name (unique), code (unique), description, distance, type (`OLEODUCTO`\|`POLIDUCTO`)                                                                              |
-| sub_system           | Sub-components — name (unique), code (unique), nomenclature (unique)                                                                                                                   |
-| system_sub_system    | M:N relation — system ↔ sub_system (cascade delete both sides)                                                                                                                        |
-| tag                  | PHD historian tags — tagname, category (`tag_category` enum), phdTagno (uniqueIndex), phdUnit, phdDataTypeName (`DOUBLE`\|`STRING`\|`BOOLEAN`\|`BINARY`\|`INTEGER`\|`FLOAT`), phdAssetName, phdDescription, historizationFrom — `systemId` and `subSystemId` are SET NULL on delete (tags become orphaned). **`tag_category` values:** `FLOW`, `FLOW_IN`, `FLOW_OUT`, `VOLUME`, `PRESSURE`, `PRESSURE_IN`, `PRESSURE_OUT`, `LEVEL`, `SELECTOR_S_E`, `PRESSURE_IN_MAX`, `PRESSURE_OUT_MAX` |
-| tag_etl_state        | ETL tracking per tag — status (`PENDING`\|`RUNNING`\|`READY`\|`FAILED`\|`PAUSED`), mode (`HISTORICAL`\|`INCREMENTAL`), batchNumber (auto-assigned in groups of 50), lastLoadedDataTimestamp (init = historizationFrom \|\| createdAt), consecutiveFailures. **Auto-created by trigger `trg_tag_etl_state_on_insert` on every tag insert.** |
-| etl_scheduler_state  | Singleton row (`id=1`) tracking `lastBatchExecuted` — updated by python-etl after each batch cycle |
+| Table               | Description                         |
+|---------------------|-------------------------------------|
+| system_entity       | Top-level systems in schema `phd`   |
+| subsystem           | Sub-components in schema `phd`      |
+| system_subsystem    | M:N relation system ↔ subsystem     |
+| tag                 | PHD historian tags in schema `phd`  |
+| system_group        | System groups in schema `phd`       |
+| system_group_member | Membership relation for system groups |
 
-### Partitioned table + ETL trigger (`setup.ts` — raw SQL, idempotent)
+### Active Schema
 
-| Object                            | Type              | Description                                                                 |
-|-----------------------------------|-------------------|-----------------------------------------------------------------------------|
-| tag_value                         | Partitioned table | `PARTITION BY RANGE (timestamp)` — monthly, includes `tag_value_default`    |
-| fn_create_tag_etl_state           | Trigger function  | Calculates `batch_number` (groups of 50), sets `last_loaded_data_timestamp` = `historization_from` or `date_trunc('month', now())` |
-| trg_tag_etl_state_on_insert       | Trigger on `tag`  | Fires `AFTER INSERT` per row — auto-inserts into `tag_etl_state`            |
-
-> **Critical constraint:** `tag_value` must **never** be added to the `schema` array in `drizzle.config.ts`. Drizzle Kit cannot generate partitioned DDL. The table is created exclusively by `setup.ts` using raw SQL with `IF NOT EXISTS`.
-
-> **Trigger is idempotent:** `setup.ts` uses `CREATE OR REPLACE FUNCTION` and `DROP TRIGGER IF EXISTS` — safe to run on every `pnpm db:push`.
+The only active schema entrypoint is `src/core/db/drizzle/schema/phd.schema.ts`.
 
 ## Module Architecture (MVC + Dependency Injection)
 
@@ -170,13 +144,9 @@ Base path: `/api`
 
 ## Historical Data Scope
 
-The app-backend no longer serves historical time-series reads from PostgreSQL `public.tag_value`.
+`app-backend` is a catalog API over schema `phd`.
 
-Current contract boundaries are:
-- `python-app -> odbc-api -> PHD` for historical values.
-- `python-app -> app-backend -> schema phd catalog` for systems, subsystems, tags, and import metadata.
-
-`app-backend` remains a catalog API over schema `phd` and does not expose `/tag-values/raw`, `/tag-values/raw/batch`, or `/tag-values/batch/historized` endpoints.
+Historical historian reads live in `python-app` through `odbc-api`; `app-backend` only serves systems, subsystems, tags, system groups, and import metadata from `phd`.
 
 ## Adding New Seeds
 
@@ -187,23 +157,15 @@ Current contract boundaries are:
    "seed:<name>": "tsx src/core/db/drizzle/seeds/<name>.seed.ts"
    ```
 
-## Partition Seeds
+## Seeds
 
-`seeds/partitions.seed.ts` exports:
-- `createMonthPartition(year, month)` — creates a single monthly partition (idempotent)
-- `createPartitionRange(from, to)` — creates partitions across a date range
-
-Configure the range at the top of the file:
-```ts
-const FROM = { year: 2026, month: 1 };
-const TO   = { year: 2026, month: 12 };
-```
+Use `src/core/db/drizzle/seeds/phd-demo.seed.ts` for the approved demo seed.
 
 ## Boundaries
 
 - **Never edit** migration files manually.
-- **Ask before** adding `tag_value` or any partitioned table to `drizzle.config.ts`.
+- **Ask before** changing the active `phd` schema configuration or adding a second Drizzle config.
 - **Ask before** dropping or renaming existing schema tables.
-- `db:push` is safe for dev; production changes require reviewed migrations.
+- `db:phd:push` is the approved schema workflow; production changes require reviewed migrations.
 - Always use `pnpm` — never `npm` or `yarn` in this project.
 - **Keep this file up to date:** whenever a new module, endpoint, seed, or architectural decision is added, update the corresponding section in this `AGENTS.md` before finishing the task.

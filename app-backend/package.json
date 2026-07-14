@@ -6,9 +6,6 @@
         "dev": "nodemon --legacy-watch --exec tsx src/index.ts",
         "build": "tsc -p tsconfig.build.json",
         "start": "node dist/index.js",
-        "db:generate": "drizzle-kit generate",
-        "db:migrate": "drizzle-kit migrate",
-        "db:push": "drizzle-kit push && tsx src/core/db/drizzle/setup.ts",
         "db:phd:generate": "drizzle-kit generate --config=drizzle.phd.config.ts",
         "db:phd:migrate": "drizzle-kit migrate --config=drizzle.phd.config.ts",
         "db:phd:push": "drizzle-kit push --config=drizzle.phd.config.ts",
@@ -22,9 +19,7 @@
         "test:phase3a": "tsx src/tests/phase3a-system-group.integration.test.ts",
         "test:phase3b": "tsx src/tests/phase3b-system-group-update-delete.integration.test.ts",
         "explain:phase2a": "tsx scripts/phase2a-explain.ts",
-        "db:studio": "drizzle-kit studio",
-        "seed:partitions": "tsx src/core/db/drizzle/seeds/partitions.seed.ts",
-        "seed:demo": "tsx src/core/db/drizzle/seeds/demo.seed.ts"
+        "db:studio": "drizzle-kit studio --config=drizzle.phd.config.ts"
     },
     "dependencies": {
         "dotenv": "^16.4.5",
