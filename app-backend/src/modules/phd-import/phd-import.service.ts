@@ -26,11 +26,11 @@ export class PhdImportService {
     }
 
     const parsed = this.parser.parseCatalogWorkbook(file.buffer);
-    const rows = this.validator.validateWorkbook(parsed);
+    const normalized = this.validator.validateWorkbook(parsed);
 
     return db.transaction(async (tx) => {
       try {
-        return await this.repository.importCatalog(tx as unknown as DrizzleDB, rows, dryRun);
+        return await this.repository.importCatalog(tx as unknown as DrizzleDB, normalized, dryRun);
       } catch (error) {
         if (error instanceof ImportValidationError || error instanceof HttpError) {
           throw error;

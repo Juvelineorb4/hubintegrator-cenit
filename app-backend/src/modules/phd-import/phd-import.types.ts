@@ -31,6 +31,7 @@ export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS] as const;
 export type CatalogColumn = (typeof ALL_COLUMNS)[number];
 
 export type ValidationIssue = {
+  sheet?: "catalog" | "system_groups";
   row: number;
   field: string;
   value: string | null;
@@ -51,9 +52,20 @@ export type ParsedCatalogRow = {
   raw: Record<string, unknown>;
 };
 
-export type ParsedWorkbook = {
+export type ParsedSystemGroupRow = {
+  rowNumber: number;
+  raw: Record<string, unknown>;
+};
+
+export type ParsedSheet<T> = {
+  present: boolean;
   headers: string[];
-  rows: ParsedCatalogRow[];
+  rows: T[];
+};
+
+export type ParsedWorkbook = {
+  catalog: ParsedSheet<ParsedCatalogRow>;
+  systemGroups: ParsedSheet<ParsedSystemGroupRow>;
 };
 
 export type NormalizedCatalogRow = {
@@ -88,6 +100,32 @@ export type NormalizedCatalogRow = {
   qualifier: "NORMAL" | "MAX";
 };
 
+export type NormalizedSystemGroupRow = {
+  rowNumber: number;
+  groupName: string;
+  groupDescription: string | null;
+  groupDisplayOrder: number;
+  systemCode: string;
+  systemDisplayOrder: number;
+};
+
+export type NormalizedWorkbook = {
+  catalogRows: NormalizedCatalogRow[];
+  systemGroupRows: NormalizedSystemGroupRow[];
+  hasSystemGroupsSheet: boolean;
+};
+
+export const REQUIRED_SYSTEM_GROUP_COLUMNS = [
+  "groupName",
+  "groupDisplayOrder",
+  "systemCode",
+  "systemDisplayOrder",
+] as const;
+
+export const OPTIONAL_SYSTEM_GROUP_COLUMNS = ["groupDescription"] as const;
+
+export const ALL_SYSTEM_GROUP_COLUMNS = [...REQUIRED_SYSTEM_GROUP_COLUMNS, ...OPTIONAL_SYSTEM_GROUP_COLUMNS] as const;
+
 export type ImportSummary = {
   dryRun: boolean;
   rowsProcessed: number;
@@ -95,5 +133,7 @@ export type ImportSummary = {
   subsystems: { created: number; updated: number; skipped: number };
   relations: { created: number; updated: number; skipped: number };
   tags: { created: number; updated: number; skipped: number };
+  groups: { created: number; updated: number; skipped: number };
+  groupMembers: { created: number; updated: number; skipped: number };
   errors: ValidationIssue[];
 };

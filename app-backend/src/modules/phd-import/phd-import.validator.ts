@@ -1,9 +1,13 @@
 import { parsePublicTagCategory } from "../../shared/phd/tag-category";
 import {
+  ALL_SYSTEM_GROUP_COLUMNS,
   OPTIONAL_COLUMNS,
   ImportValidationError,
   NormalizedCatalogRow,
+  NormalizedSystemGroupRow,
+  NormalizedWorkbook,
   ParsedWorkbook,
+  REQUIRED_SYSTEM_GROUP_COLUMNS,
   REQUIRED_COLUMNS,
   ValidationIssue,
 } from "./phd-import.types";
@@ -12,29 +16,29 @@ const VALID_SYSTEM_TYPES = new Set(["OIL_PIPELINE", "PRODUCT_PIPELINE"]);
 const VALID_PHD_TYPES = new Set(["DOUBLE", "STRING", "BOOLEAN", "BINARY", "INTEGER", "FLOAT"]);
 
 export class PhdImportValidator {
-  validateWorkbook(parsed: ParsedWorkbook): NormalizedCatalogRow[] {
+  validateWorkbook(parsed: ParsedWorkbook): NormalizedWorkbook {
     const errors: ValidationIssue[] = [];
 
-    if (!parsed.headers.length) {
+    if (!parsed.catalog.headers.length) {
       errors.push({ row: 1, field: "sheet", value: "catalog", reason: "Sheet 'catalog' is required" });
       throw new ImportValidationError(errors);
     }
 
     for (const column of REQUIRED_COLUMNS) {
-      if (!parsed.headers.includes(column)) {
+      if (!parsed.catalog.headers.includes(column)) {
         errors.push({ row: 1, field: column, value: null, reason: "Required column is missing" });
       }
     }
 
     const normalizedRows: NormalizedCatalogRow[] = [];
     const recognizedColumns = new Set<string>([...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS]);
-    const presentRecognizedHeaders = parsed.headers.filter((header) => recognizedColumns.has(header));
+    const presentRecognizedHeaders = parsed.catalog.headers.filter((header) => recognizedColumns.has(header));
 
     const systemCodeMap = new Map<string, { name: string; type: string; row: number }>();
     const subSystemCodeMap = new Map<string, { name: string; nomenclature: string; row: number }>();
     const tagMap = new Map<string, { systemCode: string; subSystemCode: string; row: number }>();
 
-    for (const row of parsed.rows) {
+    for (const row of parsed.catalog.rows) {
       const valueOf = (field: string): string => {
         const value = row.raw[field];
         if (value === null || value === undefined) {
@@ -198,10 +202,204 @@ export class PhdImportValidator {
       }
     }
 
+    const normalizedSystemGroupRows: NormalizedSystemGroupRow[] = [];
+    if (parsed.systemGroups.present) {
+      for (const column of REQUIRED_SYSTEM_GROUP_COLUMNS) {
+        if (!parsed.systemGroups.headers.includes(column)) {
+          errors.push({
+            sheet: "system_groups",
+            row: 1,
+            field: column,
+            value: null,
+            reason: "Required column is missing",
+          });
+        }
+      }
+
+      const recognizedGroupColumns = new Set<string>([...ALL_SYSTEM_GROUP_COLUMNS]);
+      const presentRecognizedGroupHeaders = parsed.systemGroups.headers.filter((header) => recognizedGroupColumns.has(header));
+
+      const groupDefinitionMap = new Map<string, { row: number; groupDescription: string | null; groupDisplayOrder: number }>();
+      const groupSystemSeen = new Set<string>();
+      const groupDisplaySeen = new Set<string>();
+
+      for (const row of parsed.systemGroups.rows) {
+        const valueOf = (field: string): string => {
+          const value = row.raw[field];
+          if (value === null || value === undefined) {
+            return "";
+          }
+          return String(value).trim();
+        };
+
+        const recognizedValues = presentRecognizedGroupHeaders.map((header) => String(row.raw[header] ?? "").trim());
+        const emptyRow = recognizedValues.every((value) => !value);
+        if (emptyRow) {
+          continue;
+        }
+
+        const groupName = valueOf("groupName");
+        const groupDescription = valueOf("groupDescription") || null;
+        const groupDisplayOrderRaw = valueOf("groupDisplayOrder");
+        const systemCode = valueOf("systemCode");
+        const systemDisplayOrderRaw = valueOf("systemDisplayOrder");
+
+        const missingRequired: string[] = [];
+        if (!groupName) {
+          missingRequired.push("groupName");
+          errors.push({
+            sheet: "system_groups",
+            row: row.rowNumber,
+            field: "groupName",
+            value: null,
+            reason: "Required value is missing",
+          });
+        }
+        if (!groupDisplayOrderRaw) {
+          missingRequired.push("groupDisplayOrder");
+          errors.push({
+            sheet: "system_groups",
+            row: row.rowNumber,
+            field: "groupDisplayOrder",
+            value: null,
+            reason: "Required value is missing",
+          });
+        }
+        if (!systemCode) {
+          missingRequired.push("systemCode");
+          errors.push({
+            sheet: "system_groups",
+            row: row.rowNumber,
+            field: "systemCode",
+            value: null,
+            reason: "Required value is missing",
+          });
+        }
+        if (!systemDisplayOrderRaw) {
+          missingRequired.push("systemDisplayOrder");
+          errors.push({
+            sheet: "system_groups",
+            row: row.rowNumber,
+            field: "systemDisplayOrder",
+            value: null,
+            reason: "Required value is missing",
+          });
+        }
+
+        if (missingRequired.length > 0 && missingRequired.length < REQUIRED_SYSTEM_GROUP_COLUMNS.length) {
+          errors.push({
+            sheet: "system_groups",
+            row: row.rowNumber,
+            field: "row",
+            value: null,
+            reason: "Partially filled row",
+          });
+        }
+
+        let groupDisplayOrder: number | null = null;
+        if (groupDisplayOrderRaw) {
+          const parsedOrder = Number(groupDisplayOrderRaw);
+          if (!Number.isInteger(parsedOrder) || parsedOrder <= 0) {
+            errors.push({
+              sheet: "system_groups",
+              row: row.rowNumber,
+              field: "groupDisplayOrder",
+              value: groupDisplayOrderRaw,
+              reason: "groupDisplayOrder must be a positive integer",
+            });
+          } else {
+            groupDisplayOrder = parsedOrder;
+          }
+        }
+
+        let systemDisplayOrder: number | null = null;
+        if (systemDisplayOrderRaw) {
+          const parsedOrder = Number(systemDisplayOrderRaw);
+          if (!Number.isInteger(parsedOrder) || parsedOrder <= 0) {
+            errors.push({
+              sheet: "system_groups",
+              row: row.rowNumber,
+              field: "systemDisplayOrder",
+              value: systemDisplayOrderRaw,
+              reason: "systemDisplayOrder must be a positive integer",
+            });
+          } else {
+            systemDisplayOrder = parsedOrder;
+          }
+        }
+
+        if (groupName && groupDisplayOrder !== null) {
+          const existing = groupDefinitionMap.get(groupName);
+          if (!existing) {
+            groupDefinitionMap.set(groupName, {
+              row: row.rowNumber,
+              groupDescription,
+              groupDisplayOrder,
+            });
+          } else {
+            if (existing.groupDescription !== groupDescription || existing.groupDisplayOrder !== groupDisplayOrder) {
+              errors.push({
+                sheet: "system_groups",
+                row: row.rowNumber,
+                field: "groupName",
+                value: groupName,
+                reason: "Contradictory group data for same groupName",
+              });
+            }
+          }
+        }
+
+        if (groupName && systemCode) {
+          const memberKey = `${groupName}::${systemCode}`;
+          if (groupSystemSeen.has(memberKey)) {
+            errors.push({
+              sheet: "system_groups",
+              row: row.rowNumber,
+              field: "systemCode",
+              value: systemCode,
+              reason: "Duplicate systemCode within group",
+            });
+          } else {
+            groupSystemSeen.add(memberKey);
+          }
+        }
+
+        if (groupName && systemDisplayOrder !== null) {
+          const displayKey = `${groupName}::${systemDisplayOrder}`;
+          if (groupDisplaySeen.has(displayKey)) {
+            errors.push({
+              sheet: "system_groups",
+              row: row.rowNumber,
+              field: "systemDisplayOrder",
+              value: String(systemDisplayOrder),
+              reason: "Duplicate systemDisplayOrder within group",
+            });
+          } else {
+            groupDisplaySeen.add(displayKey);
+          }
+        }
+
+        if (groupName && groupDisplayOrder !== null && systemCode && systemDisplayOrder !== null) {
+          normalizedSystemGroupRows.push({
+            rowNumber: row.rowNumber,
+            groupName,
+            groupDescription,
+            groupDisplayOrder,
+            systemCode,
+            systemDisplayOrder,
+          });
+        }
+      }
+    }
+
     if (errors.length) {
       throw new ImportValidationError(errors);
     }
 
-    return normalizedRows;
+    return {
+      catalogRows: normalizedRows,
+      systemGroupRows: normalizedSystemGroupRows,
+      hasSystemGroupsSheet: parsed.systemGroups.present,
+    };
   }
 }
