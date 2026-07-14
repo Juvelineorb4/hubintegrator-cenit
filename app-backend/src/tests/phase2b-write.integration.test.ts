@@ -46,9 +46,9 @@ type TagPayload = {
   tagname: string;
   description?: string;
   category: string;
-  phdTagno: string;
+  phdTagno?: string;
   phdUnit?: string;
-  phdDataTypeName: string;
+  phdDataTypeName?: string;
   phdAssetName?: string;
   phdDescription?: string;
   systemId: string;
@@ -313,6 +313,17 @@ async function run() {
       phdDataTypeName: "DOUBLE",
     } satisfies TagPayload);
     assert.equal(assertSuccess(createVolume, 201).data.category, "VOLUME");
+
+    const createWithoutPhdMetadata = await requestJson<{ category: string; phdTagno: string | null; phdDataTypeName: string | null }>("POST", `${baseUrl}/tags`, {
+      tagname: makeCode("TAG_NO_PHD"),
+      category: "FLOW_OUT",
+      systemId: createdSystem.id,
+      subSystemId: createdSubSystem.id,
+    } satisfies TagPayload);
+    const withoutPhdBody = assertSuccess(createWithoutPhdMetadata, 201).data;
+    assert.equal(withoutPhdBody.category, "FLOW_OUT");
+    assert.equal(withoutPhdBody.phdTagno, null);
+    assert.equal(withoutPhdBody.phdDataTypeName, null);
 
     const duplicateTagname = await requestJson("POST", `${baseUrl}/tags`, {
       ...baseTagPayload,

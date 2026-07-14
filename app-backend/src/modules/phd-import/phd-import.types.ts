@@ -9,7 +9,6 @@ export const REQUIRED_COLUMNS = [
   "nomenclature",
   "tagname",
   "category",
-  "phdDataTypeName",
 ] as const;
 
 export const OPTIONAL_COLUMNS = [
@@ -22,6 +21,7 @@ export const OPTIONAL_COLUMNS = [
   "description",
   "phdTagno",
   "phdUnit",
+  "phdDataTypeName",
   "phdAssetName",
   "phdDescription",
 ] as const;
@@ -73,11 +73,16 @@ export type NormalizedCatalogRow = {
   tagname: string;
   description: string | null;
   category: "FLOW_IN" | "FLOW_OUT" | "PRESSURE_IN" | "PRESSURE_OUT" | "PRESSURE_IN_MAX" | "PRESSURE_OUT_MAX" | "LEVEL" | "VOLUME" | "SELECTOR_S_E";
-  phdTagno: string;
+  phdTagno: string | null;
   phdUnit: string | null;
-  phdDataTypeName: "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT";
+  phdDataTypeName: "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT" | null;
   phdAssetName: string | null;
   phdDescription: string | null;
+  hasExplicitPhdTagno: boolean;
+  hasExplicitPhdUnit: boolean;
+  hasExplicitPhdDataTypeName: boolean;
+  hasExplicitPhdAssetName: boolean;
+  hasExplicitPhdDescription: boolean;
   measurementType: "FLOW" | "PRESSURE" | "LEVEL" | "VOLUME" | "SELECTOR";
   role: "NONE" | "IN" | "OUT" | "S_E";
   qualifier: "NORMAL" | "MAX";

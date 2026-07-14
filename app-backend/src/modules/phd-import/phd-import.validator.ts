@@ -1,5 +1,6 @@
 import { parsePublicTagCategory } from "../../shared/phd/tag-category";
 import {
+  OPTIONAL_COLUMNS,
   ImportValidationError,
   NormalizedCatalogRow,
   ParsedWorkbook,
@@ -26,6 +27,8 @@ export class PhdImportValidator {
     }
 
     const normalizedRows: NormalizedCatalogRow[] = [];
+    const recognizedColumns = new Set<string>([...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS]);
+    const presentRecognizedHeaders = parsed.headers.filter((header) => recognizedColumns.has(header));
 
     const systemCodeMap = new Map<string, { name: string; type: string; row: number }>();
     const subSystemCodeMap = new Map<string, { name: string; nomenclature: string; row: number }>();
@@ -40,10 +43,9 @@ export class PhdImportValidator {
         return String(value).trim();
       };
 
-      const allValues = Object.values(row.raw).map((value) => String(value ?? "").trim());
-      const emptyRow = allValues.every((value) => !value);
+      const recognizedValues = presentRecognizedHeaders.map((header) => String(row.raw[header] ?? "").trim());
+      const emptyRow = recognizedValues.every((value) => !value);
       if (emptyRow) {
-        errors.push({ row: row.rowNumber, field: "row", value: null, reason: "Empty row" });
         continue;
       }
 
@@ -55,7 +57,24 @@ export class PhdImportValidator {
       const nomenclature = valueOf("nomenclature");
       const tagname = valueOf("tagname");
       const category = valueOf("category").toUpperCase();
-      const phdDataTypeName = valueOf("phdDataTypeName").toUpperCase();
+
+      const rawPhdTagno = valueOf("phdTagno");
+      const rawPhdUnit = valueOf("phdUnit");
+      const rawPhdDataTypeName = valueOf("phdDataTypeName");
+      const rawPhdAssetName = valueOf("phdAssetName");
+      const rawPhdDescription = valueOf("phdDescription");
+
+      const phdTagno = rawPhdTagno || null;
+      const phdUnit = rawPhdUnit || null;
+      const phdDataTypeName = rawPhdDataTypeName ? rawPhdDataTypeName.toUpperCase() : null;
+      const phdAssetName = rawPhdAssetName || null;
+      const phdDescription = rawPhdDescription || null;
+
+      const hasExplicitPhdTagno = Boolean(rawPhdTagno);
+      const hasExplicitPhdUnit = Boolean(rawPhdUnit);
+      const hasExplicitPhdDataTypeName = Boolean(rawPhdDataTypeName);
+      const hasExplicitPhdAssetName = Boolean(rawPhdAssetName);
+      const hasExplicitPhdDescription = Boolean(rawPhdDescription);
 
       if (!systemCode) {
         errors.push({ row: row.rowNumber, field: "systemCode", value: null, reason: "Required value is missing" });
@@ -71,7 +90,7 @@ export class PhdImportValidator {
         errors.push({ row: row.rowNumber, field: "systemType", value: systemType || null, reason: "Unsupported systemType" });
       }
 
-      if (!VALID_PHD_TYPES.has(phdDataTypeName)) {
+      if (phdDataTypeName && !VALID_PHD_TYPES.has(phdDataTypeName)) {
         errors.push({ row: row.rowNumber, field: "phdDataTypeName", value: phdDataTypeName || null, reason: "Unsupported phdDataTypeName" });
       }
 
@@ -144,7 +163,7 @@ export class PhdImportValidator {
         }
       }
 
-      if (parsedCategory && VALID_SYSTEM_TYPES.has(systemType) && VALID_PHD_TYPES.has(phdDataTypeName) && systemCode && subSystemCode && tagname) {
+      if (parsedCategory && VALID_SYSTEM_TYPES.has(systemType) && systemCode && subSystemCode && tagname) {
         normalizedRows.push({
           rowNumber: row.rowNumber,
           systemName,
@@ -162,11 +181,16 @@ export class PhdImportValidator {
           tagname,
           description: valueOf("description") || null,
           category: category as NormalizedCatalogRow["category"],
-          phdTagno: valueOf("phdTagno") || tagname,
-          phdUnit: valueOf("phdUnit") || null,
+          phdTagno,
+          phdUnit,
           phdDataTypeName: phdDataTypeName as NormalizedCatalogRow["phdDataTypeName"],
-          phdAssetName: valueOf("phdAssetName") || null,
-          phdDescription: valueOf("phdDescription") || null,
+          phdAssetName,
+          phdDescription,
+          hasExplicitPhdTagno,
+          hasExplicitPhdUnit,
+          hasExplicitPhdDataTypeName,
+          hasExplicitPhdAssetName,
+          hasExplicitPhdDescription,
           measurementType: parsedCategory.measurementType,
           role: parsedCategory.role,
           qualifier: parsedCategory.qualifier,

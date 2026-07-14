@@ -413,6 +413,24 @@ async function run() {
     assert.equal(tagRow[0]?.role, "OUT");
     assert.equal(tagRow[0]?.qualifier, "MAX");
 
+    const tagPatchWithoutPhdFields = await requestJson<{ id: string; category: string }>(
+      "PATCH",
+      `${baseUrl}/tags/${tagA.id}`,
+      {
+        category: "PRESSURE_IN",
+      }
+    );
+    assert.equal(assertSuccess(tagPatchWithoutPhdFields, 200).data.category, "PRESSURE_IN");
+
+    const tagPatchEmptyPhdDataType = await requestJson<{ id: string; phdDataTypeName: string | null }>(
+      "PATCH",
+      `${baseUrl}/tags/${tagA.id}`,
+      {
+        phdDataTypeName: "",
+      }
+    );
+    assert.equal(assertSuccess(tagPatchEmptyPhdDataType, 200).data.phdDataTypeName, null);
+
     const publicWriteCheck = await pool.query(`
       SELECT
         to_regclass('public.system_entity') AS public_system_table,

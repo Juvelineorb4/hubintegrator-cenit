@@ -11,9 +11,9 @@ export type CreateTagPublicInput = {
   tagname: string;
   description?: string | null;
   category: string;
-  phdTagno: string;
+  phdTagno?: string | null;
   phdUnit?: string | null;
-  phdDataTypeName: string;
+  phdDataTypeName?: string | null;
   phdAssetName?: string | null;
   phdDescription?: string | null;
   systemId: string;
@@ -31,9 +31,9 @@ type TagReadRow = {
   measurementType: "FLOW" | "PRESSURE" | "LEVEL" | "VOLUME" | "SELECTOR";
   role: "NONE" | "IN" | "OUT" | "S_E";
   qualifier: "NORMAL" | "MAX";
-  phdTagno: string;
+  phdTagno: string | null;
   phdUnit: string | null;
-  phdDataTypeName: "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT";
+  phdDataTypeName: "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT" | null;
   phdAssetName: string | null;
   phdDescription: string | null;
   systemId: string;
@@ -177,7 +177,7 @@ export class TagRepository {
   }
 
   async create(data: CreateTagPublicInput) {
-    if (!data?.tagname || !data?.category || !data?.systemId || !data?.subSystemId || !data?.phdTagno || !data?.phdDataTypeName) {
+    if (!data?.tagname || !data?.category || !data?.systemId || !data?.subSystemId) {
       throw new HttpError(400, "Invalid tag payload");
     }
 
@@ -189,8 +189,8 @@ export class TagRepository {
       }
     })();
 
-    const phdDataType = data.phdDataTypeName.trim().toUpperCase();
-    if (!VALID_PHD_DATA_TYPES.has(phdDataType)) {
+    const phdDataType = data.phdDataTypeName?.trim() ? data.phdDataTypeName.trim().toUpperCase() : null;
+    if (phdDataType && !VALID_PHD_DATA_TYPES.has(phdDataType)) {
       throw new HttpError(400, "Invalid phdDataTypeName");
     }
 
@@ -238,9 +238,9 @@ export class TagRepository {
           measurementType: parsedCategory.measurementType,
           role: parsedCategory.role,
           qualifier: parsedCategory.qualifier,
-          phdTagNo: data.phdTagno,
+          phdTagNo: data.phdTagno?.trim() ? data.phdTagno.trim() : null,
           phdUnit: data.phdUnit ?? null,
-          phdDataType: phdDataType as "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT",
+          phdDataType: phdDataType as "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT" | null,
           phdAssetName: data.phdAssetName ?? null,
           phdDescription: data.phdDescription ?? null,
           systemSubsystemId: relation.id,
@@ -296,10 +296,7 @@ export class TagRepository {
     }
 
     if (Object.prototype.hasOwnProperty.call(data, "phdTagno")) {
-      if (!data.phdTagno) {
-        throw new HttpError(400, "Invalid tag payload");
-      }
-      patchData.phdTagNo = data.phdTagno;
+      patchData.phdTagNo = data.phdTagno?.trim() ? data.phdTagno.trim() : null;
     }
 
     if (Object.prototype.hasOwnProperty.call(data, "phdUnit")) {
@@ -333,16 +330,11 @@ export class TagRepository {
     }
 
     if (Object.prototype.hasOwnProperty.call(data, "phdDataTypeName")) {
-      if (!data.phdDataTypeName) {
-        throw new HttpError(400, "Invalid tag payload");
-      }
-
-      const phdDataType = data.phdDataTypeName.trim().toUpperCase();
-      if (!VALID_PHD_DATA_TYPES.has(phdDataType)) {
+      const phdDataType = data.phdDataTypeName?.trim() ? data.phdDataTypeName.trim().toUpperCase() : null;
+      if (phdDataType && !VALID_PHD_DATA_TYPES.has(phdDataType)) {
         throw new HttpError(400, "Invalid phdDataTypeName");
       }
-
-      patchData.phdDataType = phdDataType as "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT";
+      patchData.phdDataType = phdDataType as "DOUBLE" | "STRING" | "BOOLEAN" | "BINARY" | "INTEGER" | "FLOAT" | null;
     }
 
     if (hasSystem && hasSubSystem) {

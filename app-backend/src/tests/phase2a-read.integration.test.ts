@@ -39,9 +39,9 @@ type TagRow = {
   tagname: string;
   description: string | null;
   category: string;
-  phdTagno: string;
+  phdTagno: string | null;
   phdUnit: string | null;
-  phdDataTypeName: string;
+  phdDataTypeName: string | null;
   phdAssetName: string | null;
   phdDescription: string | null;
   systemId: string;

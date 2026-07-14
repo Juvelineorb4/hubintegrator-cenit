@@ -20,6 +20,16 @@ export class PhdImportParser {
     }
 
     const rows: ParsedCatalogRow[] = [];
+    const normalizeCellValue = (value: unknown): unknown => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === "string" && !value.trim()) {
+        return null;
+      }
+      return value;
+    };
+
     for (let row = range.s.r + 1; row <= range.e.r; row += 1) {
       const raw: Record<string, unknown> = {};
       headers.forEach((header, index) => {
@@ -27,7 +37,7 @@ export class PhdImportParser {
           return;
         }
         const addr = XLSX.utils.encode_cell({ r: row, c: range.s.c + index });
-        raw[header] = sheet[addr]?.v ?? null;
+        raw[header] = normalizeCellValue(sheet[addr]?.v ?? null);
       });
 
       rows.push({ rowNumber: row + 1, raw });

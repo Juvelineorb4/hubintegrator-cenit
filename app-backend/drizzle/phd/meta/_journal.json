@@ -8,6 +8,13 @@
       "when": 1783990596289,
       "tag": "0000_tan_power_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784048501020,
+      "tag": "0001_red_hawkeye",
+      "breakpoints": true
     }
   ]
 }

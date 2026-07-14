@@ -114,9 +114,9 @@ export const phdTag = phdSchema.table(
     measurementType: phdTagMeasurementTypeEnum("measurement_type").notNull(),
     role: phdTagRoleEnum("role").notNull(),
     qualifier: phdTagQualifierEnum("qualifier").notNull(),
-    phdTagNo: varchar("phd_tag_no", { length: 100 }).notNull(),
+    phdTagNo: varchar("phd_tag_no", { length: 100 }),
     phdUnit: varchar("phd_unit", { length: 50 }),
-    phdDataType: phdDataTypeEnum("phd_data_type").notNull(),
+    phdDataType: phdDataTypeEnum("phd_data_type"),
     phdAssetName: varchar("phd_asset_name", { length: 255 }),
     phdDescription: text("phd_description"),
     systemSubsystemId: uuid("system_subsystem_id")

@@ -62,6 +62,24 @@ function buildCatalogWorkbook(rows: Array<Record<string, unknown>>, options?: { 
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
+function buildCatalogWorkbookWithExtendedRange(
+  rows: Array<Record<string, unknown>>,
+  lastRow: number,
+  options?: { sheetName?: string; headers?: string[] }
+): Buffer {
+  const headers = options?.headers ?? HEADERS;
+  const sheetName = options?.sheetName ?? "catalog";
+
+  const wb = XLSX.read(buildCatalogWorkbook(rows, options), { type: "buffer" });
+  const ws = wb.Sheets[sheetName];
+  if (ws) {
+    const endCol = XLSX.utils.encode_col(headers.length - 1);
+    ws["!ref"] = `A1:${endCol}${lastRow}`;
+  }
+
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+
 async function postImport(
   url: string,
   fileBuffer: Buffer,
@@ -225,6 +243,249 @@ async function run() {
     assert.ok(updateBody.relations.updated >= 1);
     assert.ok(updateBody.tags.updated >= 1);
 
+    const noPhdDataTypeRows = [
+      {
+        systemName: makeCode("No_DataType_System"),
+        systemCode: makeCode("SYS_NO_DT"),
+        systemType: "OIL_PIPELINE",
+        subSystemName: makeCode("No_DataType_Sub"),
+        subSystemCode: makeCode("SUB_NO_DT"),
+        nomenclature: makeCode("NOM_NO_DT"),
+        tagname: makeCode("TAG_NO_DT"),
+        category: "FLOW_OUT",
+      },
+    ];
+
+    const noPhdDataTypeBuffer = buildCatalogWorkbook(noPhdDataTypeRows, {
+      headers: HEADERS.filter((header) => header !== "phdDataTypeName"),
+    });
+    const noPhdDataTypeResult = await postImport(baseUrl, noPhdDataTypeBuffer, "catalog.xlsx");
+    assert.equal(noPhdDataTypeResult.status, 200);
+
+    const noPhdDataTypeBody = noPhdDataTypeResult.body as ImportResponse;
+    assert.equal(noPhdDataTypeBody.errors.length, 0);
+    assert.equal(noPhdDataTypeBody.tags.created, 1);
+
+    const noPhdDataTypeTag = await db
+      .select({
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, String(noPhdDataTypeRows[0].tagname)))
+      .limit(1);
+    assert.equal(noPhdDataTypeTag.length, 1);
+    assert.equal(noPhdDataTypeTag[0]?.phdTagNo, null);
+    assert.equal(noPhdDataTypeTag[0]?.phdDataType, null);
+    assert.equal(noPhdDataTypeTag[0]?.phdUnit, null);
+    assert.equal(noPhdDataTypeTag[0]?.phdAssetName, null);
+    assert.equal(noPhdDataTypeTag[0]?.phdDescription, null);
+
+    const noPhdColumnsRows = [
+      {
+        systemName: makeCode("No_PHD_Columns_System"),
+        systemCode: makeCode("SYS_NO_PHD"),
+        systemType: "PRODUCT_PIPELINE",
+        subSystemName: makeCode("No_PHD_Columns_Sub"),
+        subSystemCode: makeCode("SUB_NO_PHD"),
+        nomenclature: makeCode("NOM_NO_PHD"),
+        tagname: makeCode("TAG_NO_PHD"),
+        category: "PRESSURE_IN",
+      },
+    ];
+
+    const noPhdColumnsBuffer = buildCatalogWorkbook(noPhdColumnsRows, {
+      headers: HEADERS.filter((header) => !header.startsWith("phd")),
+    });
+    const noPhdColumnsResult = await postImport(baseUrl, noPhdColumnsBuffer, "catalog.xlsx");
+    assert.equal(noPhdColumnsResult.status, 200);
+
+    const noPhdColumnsBody = noPhdColumnsResult.body as ImportResponse;
+    assert.equal(noPhdColumnsBody.errors.length, 0);
+    assert.equal(noPhdColumnsBody.tags.created, 1);
+
+    const noPhdColumnsTag = await db
+      .select({
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, String(noPhdColumnsRows[0].tagname)))
+      .limit(1);
+    assert.equal(noPhdColumnsTag.length, 1);
+    assert.equal(noPhdColumnsTag[0]?.phdTagNo, null);
+    assert.equal(noPhdColumnsTag[0]?.phdDataType, null);
+
+    const emptyPhdRows = [
+      {
+        systemName: makeCode("Empty_PHD_System"),
+        systemCode: makeCode("SYS_EMPTY_PHD"),
+        systemType: "OIL_PIPELINE",
+        subSystemName: makeCode("Empty_PHD_Sub"),
+        subSystemCode: makeCode("SUB_EMPTY_PHD"),
+        nomenclature: makeCode("NOM_EMPTY_PHD"),
+        tagname: makeCode("TAG_EMPTY_PHD"),
+        category: "VOLUME",
+        phdTagno: "",
+        phdUnit: "",
+        phdDataTypeName: "",
+        phdAssetName: "",
+        phdDescription: "",
+      },
+    ];
+
+    const emptyPhdResult = await postImport(baseUrl, buildCatalogWorkbook(emptyPhdRows), "catalog.xlsx");
+    assert.equal(emptyPhdResult.status, 200);
+    const emptyPhdBody = emptyPhdResult.body as ImportResponse;
+    assert.equal(emptyPhdBody.errors.length, 0);
+
+    const emptyPhdTag = await db
+      .select({
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, String(emptyPhdRows[0].tagname)))
+      .limit(1);
+    assert.equal(emptyPhdTag.length, 1);
+    assert.equal(emptyPhdTag[0]?.phdTagNo, null);
+    assert.equal(emptyPhdTag[0]?.phdDataType, null);
+    assert.equal(emptyPhdTag[0]?.phdUnit, null);
+    assert.equal(emptyPhdTag[0]?.phdAssetName, null);
+    assert.equal(emptyPhdTag[0]?.phdDescription, null);
+
+    const [metaBeforeMissingUpdate] = await db
+      .select({
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, tagA))
+      .limit(1);
+    assert.ok(metaBeforeMissingUpdate);
+
+    const updateMissingPhdColumnsRows = [
+      {
+        systemName: String(updatedRows[0].systemName),
+        systemCode: String(updatedRows[0].systemCode),
+        systemType: String(updatedRows[0].systemType),
+        subSystemName: String(updatedRows[0].subSystemName),
+        subSystemCode: String(updatedRows[0].subSystemCode),
+        nomenclature: String(updatedRows[0].nomenclature),
+        tagname: String(updatedRows[0].tagname),
+        category: String(updatedRows[0].category),
+        description: "Updated without phd columns",
+      },
+    ];
+
+    const updateMissingPhdColumnsResult = await postImport(
+      baseUrl,
+      buildCatalogWorkbook(updateMissingPhdColumnsRows, {
+        headers: HEADERS.filter((header) => !header.startsWith("phd")),
+      }),
+      "catalog.xlsx"
+    );
+    assert.equal(updateMissingPhdColumnsResult.status, 200);
+
+    const [metaAfterMissingUpdate] = await db
+      .select({
+        description: phdTag.description,
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, tagA))
+      .limit(1);
+    assert.equal(metaAfterMissingUpdate?.description, "Updated without phd columns");
+    assert.equal(metaAfterMissingUpdate?.phdTagNo, metaBeforeMissingUpdate.phdTagNo);
+    assert.equal(metaAfterMissingUpdate?.phdDataType, metaBeforeMissingUpdate.phdDataType);
+    assert.equal(metaAfterMissingUpdate?.phdUnit, metaBeforeMissingUpdate.phdUnit);
+    assert.equal(metaAfterMissingUpdate?.phdAssetName, metaBeforeMissingUpdate.phdAssetName);
+    assert.equal(metaAfterMissingUpdate?.phdDescription, metaBeforeMissingUpdate.phdDescription);
+
+    const updateEmptyPhdCellsRows = [
+      {
+        ...updateMissingPhdColumnsRows[0],
+        description: "Updated with empty phd cells",
+        phdTagno: "",
+        phdUnit: "",
+        phdDataTypeName: "",
+        phdAssetName: "",
+        phdDescription: "",
+      },
+    ];
+
+    const updateEmptyPhdCellsResult = await postImport(baseUrl, buildCatalogWorkbook(updateEmptyPhdCellsRows), "catalog.xlsx");
+    assert.equal(updateEmptyPhdCellsResult.status, 200);
+
+    const [metaAfterEmptyCellsUpdate] = await db
+      .select({
+        description: phdTag.description,
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, tagA))
+      .limit(1);
+    assert.equal(metaAfterEmptyCellsUpdate?.description, "Updated with empty phd cells");
+    assert.equal(metaAfterEmptyCellsUpdate?.phdTagNo, metaBeforeMissingUpdate.phdTagNo);
+    assert.equal(metaAfterEmptyCellsUpdate?.phdDataType, metaBeforeMissingUpdate.phdDataType);
+    assert.equal(metaAfterEmptyCellsUpdate?.phdUnit, metaBeforeMissingUpdate.phdUnit);
+    assert.equal(metaAfterEmptyCellsUpdate?.phdAssetName, metaBeforeMissingUpdate.phdAssetName);
+    assert.equal(metaAfterEmptyCellsUpdate?.phdDescription, metaBeforeMissingUpdate.phdDescription);
+
+    const explicitPhdUpdateRows = [
+      {
+        ...updateMissingPhdColumnsRows[0],
+        description: "Updated with explicit phd values",
+        phdTagno: makeCode("PHD_EXPLICIT"),
+        phdUnit: "KPA",
+        phdDataTypeName: "INTEGER",
+        phdAssetName: "asset-explicit",
+        phdDescription: "explicit phd metadata",
+      },
+    ];
+
+    const explicitPhdUpdateResult = await postImport(baseUrl, buildCatalogWorkbook(explicitPhdUpdateRows), "catalog.xlsx");
+    assert.equal(explicitPhdUpdateResult.status, 200);
+
+    const [metaAfterExplicitUpdate] = await db
+      .select({
+        description: phdTag.description,
+        phdTagNo: phdTag.phdTagNo,
+        phdDataType: phdTag.phdDataType,
+        phdUnit: phdTag.phdUnit,
+        phdAssetName: phdTag.phdAssetName,
+        phdDescription: phdTag.phdDescription,
+      })
+      .from(phdTag)
+      .where(eq(phdTag.tagname, tagA))
+      .limit(1);
+    assert.equal(metaAfterExplicitUpdate?.description, "Updated with explicit phd values");
+    assert.equal(metaAfterExplicitUpdate?.phdTagNo, explicitPhdUpdateRows[0].phdTagno);
+    assert.equal(metaAfterExplicitUpdate?.phdDataType, "INTEGER");
+    assert.equal(metaAfterExplicitUpdate?.phdUnit, explicitPhdUpdateRows[0].phdUnit);
+    assert.equal(metaAfterExplicitUpdate?.phdAssetName, explicitPhdUpdateRows[0].phdAssetName);
+    assert.equal(metaAfterExplicitUpdate?.phdDescription, explicitPhdUpdateRows[0].phdDescription);
+
     const drySystem = makeCode("SYS_E_DRY");
     const drySub = makeCode("SUB_E_DRY");
     const dryTag = makeCode("TAG_E_DRY");
@@ -360,13 +621,81 @@ async function run() {
     );
     assert.equal(invalidDisplayOrder.status, 400);
 
-    const emptyRowWorkbook = buildCatalogWorkbook([
-      validRows[0],
+    const emptyRowsIgnoredRows = [
+      {
+        systemName: makeCode("Empty_Ignored_A"),
+        systemCode: makeCode("SYS_EMPTY_IGN_A"),
+        systemType: "OIL_PIPELINE",
+        subSystemName: makeCode("Empty_Ignored_Sub_A"),
+        subSystemCode: makeCode("SUB_EMPTY_IGN_A"),
+        nomenclature: makeCode("NOM_EMPTY_IGN_A"),
+        tagname: makeCode("TAG_EMPTY_IGN_A"),
+        category: "FLOW_IN",
+      },
       {},
-      { ...validRows[1], tagname: makeCode("TAG_EMPTY_ROW") },
-    ]);
-    const emptyRowResult = await postImport(baseUrl, emptyRowWorkbook, "catalog.xlsx");
-    assert.equal(emptyRowResult.status, 400);
+      {
+        systemName: "   ",
+        systemCode: "   ",
+        systemType: "   ",
+        subSystemName: "   ",
+        subSystemCode: "   ",
+        nomenclature: "   ",
+        tagname: "   ",
+        category: "   ",
+      },
+      {
+        systemName: makeCode("Empty_Ignored_B"),
+        systemCode: makeCode("SYS_EMPTY_IGN_B"),
+        systemType: "PRODUCT_PIPELINE",
+        subSystemName: makeCode("Empty_Ignored_Sub_B"),
+        subSystemCode: makeCode("SUB_EMPTY_IGN_B"),
+        nomenclature: makeCode("NOM_EMPTY_IGN_B"),
+        tagname: makeCode("TAG_EMPTY_IGN_B"),
+        category: "VOLUME",
+      },
+    ];
+
+    const emptyRowsIgnoredResult = await postImport(baseUrl, buildCatalogWorkbook(emptyRowsIgnoredRows), "catalog.xlsx");
+    assert.equal(emptyRowsIgnoredResult.status, 200);
+    const emptyRowsIgnoredBody = emptyRowsIgnoredResult.body as ImportResponse;
+    assert.equal(emptyRowsIgnoredBody.errors.length, 0);
+    assert.equal(emptyRowsIgnoredBody.rowsProcessed, 2);
+    assert.equal(emptyRowsIgnoredBody.tags.created, 2);
+
+    const partialAtRow15Wb = XLSX.read(buildCatalogWorkbook([]), { type: "buffer" });
+    const partialAtRow15Ws = partialAtRow15Wb.Sheets.catalog;
+    if (!partialAtRow15Ws) {
+      throw new Error("catalog sheet was not created for row 15 partial test");
+    }
+    partialAtRow15Ws.B15 = { t: "s", v: makeCode("SYS_PARTIAL") };
+    const endCol = XLSX.utils.encode_col(HEADERS.length - 1);
+    partialAtRow15Ws["!ref"] = `A1:${endCol}15`;
+    const partialAtRow15Buffer = XLSX.write(partialAtRow15Wb, { type: "buffer", bookType: "xlsx" });
+
+    const partialAtRow15Result = await postImport(baseUrl, partialAtRow15Buffer, "catalog.xlsx");
+    assert.equal(partialAtRow15Result.status, 400);
+    const partialAtRow15Body = partialAtRow15Result.body as { errors: Array<{ row: number; field: string }> };
+    assert.ok(partialAtRow15Body.errors.some((err) => err.row === 15 && err.field === "subSystemCode"));
+    assert.ok(partialAtRow15Body.errors.some((err) => err.row === 15 && err.field === "tagname"));
+
+    const rangeRows17 = Array.from({ length: 17 }).map((_, i) => ({
+      systemName: makeCode(`Range500_System_${i + 1}`),
+      systemCode: makeCode(`SYS_R500_${i + 1}`),
+      systemType: i % 2 === 0 ? "OIL_PIPELINE" : "PRODUCT_PIPELINE",
+      subSystemName: makeCode(`Range500_Sub_${i + 1}`),
+      subSystemCode: makeCode(`SUB_R500_${i + 1}`),
+      nomenclature: makeCode(`NOM_R500_${i + 1}`),
+      tagname: makeCode(`TAG_R500_${i + 1}`),
+      category: i % 3 === 0 ? "FLOW_OUT" : i % 3 === 1 ? "PRESSURE_IN" : "VOLUME",
+    }));
+
+    const range500Buffer = buildCatalogWorkbookWithExtendedRange(rangeRows17, 500);
+    const range500DryRun = await postImport(`${baseUrl}?dryRun=true`, range500Buffer, "catalog.xlsx");
+    assert.equal(range500DryRun.status, 200);
+    const range500DryRunBody = range500DryRun.body as ImportResponse;
+    assert.equal(range500DryRunBody.rowsProcessed, 17);
+    assert.equal(range500DryRunBody.errors.length, 0);
+    assert.equal(range500DryRunBody.tags.created, 17);
 
     const rollbackSysA = makeCode("SYS_ROLL_A");
     const rollbackSysB = makeCode("SYS_ROLL_B");

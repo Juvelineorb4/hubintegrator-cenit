@@ -319,33 +319,45 @@ export class PhdImportRepository {
         applyCounter(summary.tags, "created");
 
         if (!dryRun) {
+          const nextPhdTagNo = row.hasExplicitPhdTagno ? row.phdTagno : null;
+          const nextPhdUnit = row.hasExplicitPhdUnit ? row.phdUnit : null;
+          const nextPhdDataType = row.hasExplicitPhdDataTypeName ? row.phdDataTypeName : null;
+          const nextPhdAssetName = row.hasExplicitPhdAssetName ? row.phdAssetName : null;
+          const nextPhdDescription = row.hasExplicitPhdDescription ? row.phdDescription : null;
+
           await tx.insert(phdTag).values({
             tagname,
             description: row.description,
             measurementType: row.measurementType,
             role: row.role,
             qualifier: row.qualifier,
-            phdTagNo: row.phdTagno,
-            phdUnit: row.phdUnit,
-            phdDataType: row.phdDataTypeName,
-            phdAssetName: row.phdAssetName,
-            phdDescription: row.phdDescription,
+            phdTagNo: nextPhdTagNo,
+            phdUnit: nextPhdUnit,
+            phdDataType: nextPhdDataType,
+            phdAssetName: nextPhdAssetName,
+            phdDescription: nextPhdDescription,
             systemSubsystemId: relationId,
           });
         }
         continue;
       }
 
+      const nextPhdTagNo = row.hasExplicitPhdTagno ? row.phdTagno : (existing.phdTagNo ?? null);
+      const nextPhdUnit = row.hasExplicitPhdUnit ? row.phdUnit : (existing.phdUnit ?? null);
+      const nextPhdDataType = row.hasExplicitPhdDataTypeName ? row.phdDataTypeName : (existing.phdDataType ?? null);
+      const nextPhdAssetName = row.hasExplicitPhdAssetName ? row.phdAssetName : (existing.phdAssetName ?? null);
+      const nextPhdDescription = row.hasExplicitPhdDescription ? row.phdDescription : (existing.phdDescription ?? null);
+
       const changed =
         (existing.description ?? null) !== row.description ||
         existing.measurementType !== row.measurementType ||
         existing.role !== row.role ||
         existing.qualifier !== row.qualifier ||
-        existing.phdTagNo !== row.phdTagno ||
-        (existing.phdUnit ?? null) !== row.phdUnit ||
-        existing.phdDataType !== row.phdDataTypeName ||
-        (existing.phdAssetName ?? null) !== row.phdAssetName ||
-        (existing.phdDescription ?? null) !== row.phdDescription ||
+        (existing.phdTagNo ?? null) !== nextPhdTagNo ||
+        (existing.phdUnit ?? null) !== nextPhdUnit ||
+        (existing.phdDataType ?? null) !== nextPhdDataType ||
+        (existing.phdAssetName ?? null) !== nextPhdAssetName ||
+        (existing.phdDescription ?? null) !== nextPhdDescription ||
         existing.systemSubsystemId !== relationId;
 
       if (!changed) {
@@ -362,11 +374,11 @@ export class PhdImportRepository {
             measurementType: row.measurementType,
             role: row.role,
             qualifier: row.qualifier,
-            phdTagNo: row.phdTagno,
-            phdUnit: row.phdUnit,
-            phdDataType: row.phdDataTypeName,
-            phdAssetName: row.phdAssetName,
-            phdDescription: row.phdDescription,
+            phdTagNo: nextPhdTagNo,
+            phdUnit: nextPhdUnit,
+            phdDataType: nextPhdDataType,
+            phdAssetName: nextPhdAssetName,
+            phdDescription: nextPhdDescription,
             systemSubsystemId: relationId,
             updatedAt: new Date(),
           })
