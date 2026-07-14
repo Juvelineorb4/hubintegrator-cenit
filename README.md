@@ -103,6 +103,32 @@ NODE_ENV=production
 PYTHON_ENV=production
 ```
 
+### Import Metadata Enrichment (Phase 5C1)
+
+`POST /api/phd/import` now supports metadata enrichment through odbc-api browse.
+
+Environment variables:
+
+```env
+PHD_METADATA_MODE=disabled
+PHD_METADATA_CONCURRENCY=5
+PHD_METADATA_MAX_TAGS=1000
+
+ODBC_API_URL=http://<IP_O_DNS_WINDOWS>:1234
+ODBC_CONNECT_TIMEOUT_SECONDS=10
+ODBC_READ_TIMEOUT_SECONDS=120
+```
+
+Recommended per environment:
+
+- Laptop/development:
+  - `PHD_METADATA_MODE=disabled`
+- Validation server:
+  - `PHD_METADATA_MODE=required`
+  - `ODBC_API_URL=http://IP_DEL_BRIDGE:1234`
+  - `PHD_METADATA_CONCURRENCY=5`
+  - `PHD_METADATA_MAX_TAGS=1000`
+
 #### 2. Deploy Services
 ```bash
 cd v1/
