@@ -53,6 +53,19 @@ export class TagController {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
   };
+  getSelectorBySystemCode = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { systemCode } = req.query;
+      if (!systemCode || typeof systemCode !== "string") {
+        res.status(400).json({ success: false, message: "'systemCode' query param is required" });
+        return;
+      }
+      const data = await this.service.getSelectorBySystemCode(systemCode);
+      res.json({ success: true, data, total: data.length });
+    } catch {
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  };
   getVolumeBySystemCode = async (req: Request, res: Response): Promise<void> => {
     try {
       const { systemCode } = req.query;

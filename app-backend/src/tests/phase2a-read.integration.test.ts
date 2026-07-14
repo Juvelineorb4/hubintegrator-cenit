@@ -165,6 +165,21 @@ async function run() {
     );
     assertUniqueTagname(flowResponse.data, "flow");
 
+    const selectorResponse = await getJson<ApiListResponse<TagRow>>(`${baseUrl}/tags/selector?systemCode=11`);
+    assert.equal(selectorResponse.success, true);
+    assert.ok(selectorResponse.data.length > 0);
+    assert.ok(selectorResponse.data.every((row) => row.category === "SELECTOR_S_E"));
+    assert.equal(
+      selectorResponse.data.some((row) => row.subSystemCode === tempSubsystemCode),
+      false,
+      "Subsystem without tags should not appear in selector tags"
+    );
+    assertUniqueTagname(selectorResponse.data, "selector");
+
+    const missingSystemSelector = await getJson<ApiListResponse<TagRow>>(`${baseUrl}/tags/selector?systemCode=DOES_NOT_EXIST`);
+    assert.equal(missingSystemSelector.success, true);
+    assert.equal(missingSystemSelector.data.length, 0);
+
     const volumeResponse = await getJson<ApiListResponse<TagRow>>(`${baseUrl}/tags/volume?systemCode=11`);
     assert.equal(volumeResponse.success, true);
     assert.ok(volumeResponse.data.length > 0);

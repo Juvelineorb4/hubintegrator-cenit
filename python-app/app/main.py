@@ -15,6 +15,7 @@ from app.routers import tag_query
 from app.routers import pressure_query
 from app.routers import flow_query
 from app.routers import volume_query
+from app.routers import selector_query
 app = FastAPI(
     title="PHD Hub Loader",
     version="1.0.0",
@@ -26,6 +27,7 @@ app.include_router(tag_query.router)
 app.include_router(pressure_query.router)
 app.include_router(flow_query.router)
 app.include_router(volume_query.router)
+app.include_router(selector_query.router)
 
 
 

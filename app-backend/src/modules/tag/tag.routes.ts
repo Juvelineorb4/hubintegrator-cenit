@@ -12,6 +12,7 @@ const controller = new TagController(service);
 export const tagRouter = Router();
 tagRouter.get("/volume", controller.getVolumeBySystemCode);
 tagRouter.get("/pressure", controller.getPressureBySystemCode);
+tagRouter.get("/selector", controller.getSelectorBySystemCode);
 tagRouter.get("/flow", controller.getFlowBySystemCode);
 tagRouter.patch("/:id", controller.updateById);
 tagRouter.delete("/:id", controller.deleteById);

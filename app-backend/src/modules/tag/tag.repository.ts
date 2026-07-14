@@ -163,6 +163,19 @@ export class TagRepository {
     return rows.map((row) => this.toPublicTagRow(row));
   }
 
+  async findSelectorBySystemCode(systemCode: string) {
+    const rows = await this.baseReadQuery().where(
+      and(
+        eq(phdSystemEntity.code, systemCode),
+        eq(phdTag.measurementType, "SELECTOR"),
+        eq(phdTag.role, "S_E"),
+        eq(phdTag.qualifier, "NORMAL")
+      )
+    );
+
+    return rows.map((row) => this.toPublicTagRow(row));
+  }
+
   async findVolumeBySystemCode(systemCode: string) {
     const rows = await this.baseReadQuery().where(
       and(

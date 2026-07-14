@@ -17,6 +17,9 @@ export class TagService {
   getFlowBySystemCode(systemCode: string) {
     return this.repo.findFlowBySystemCode(systemCode);
   }
+  getSelectorBySystemCode(systemCode: string) {
+    return this.repo.findSelectorBySystemCode(systemCode);
+  }
   getVolumeBySystemCode(systemCode: string) {
     return this.repo.findVolumeBySystemCode(systemCode);
   }
