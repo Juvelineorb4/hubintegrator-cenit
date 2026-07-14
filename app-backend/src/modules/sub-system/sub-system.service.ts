@@ -22,4 +22,12 @@ export class SubSystemService {
   createRelation(data: Parameters<SubSystemRepository["createRelation"]>[0]) {
     return this.repo.createRelation(data);
   }
+
+  updateById(id: string, data: Parameters<SubSystemRepository["updateById"]>[1]) {
+    return this.repo.updateById(id, data);
+  }
+
+  updateRelationById(id: string, data: Parameters<SubSystemRepository["updateRelationById"]>[1]) {
+    return this.repo.updateRelationById(id, data);
+  }
 }

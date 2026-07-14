@@ -14,6 +14,10 @@
         "db:phd:push": "drizzle-kit push --config=drizzle.phd.config.ts",
         "db:phd:check": "drizzle-kit check --config=drizzle.phd.config.ts",
         "db:phd:seed": "tsx src/core/db/drizzle/seeds/phd-demo.seed.ts",
+        "test:phase2a": "tsx src/tests/phase2a-read.integration.test.ts",
+        "test:phase2b": "tsx src/tests/phase2b-write.integration.test.ts",
+        "test:phase2c": "tsx src/tests/phase2c-update.integration.test.ts",
+        "explain:phase2a": "tsx scripts/phase2a-explain.ts",
         "db:studio": "drizzle-kit studio",
         "seed:partitions": "tsx src/core/db/drizzle/seeds/partitions.seed.ts",
         "seed:demo": "tsx src/core/db/drizzle/seeds/demo.seed.ts"

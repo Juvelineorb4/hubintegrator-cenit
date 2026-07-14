@@ -18,4 +18,8 @@ export class SystemService {
   create(data: Parameters<SystemRepository["create"]>[0]) {
     return this.repo.create(data);
   }
+
+  updateById(id: string, data: Parameters<SystemRepository["updateById"]>[1]) {
+    return this.repo.updateById(id, data);
+  }
 }

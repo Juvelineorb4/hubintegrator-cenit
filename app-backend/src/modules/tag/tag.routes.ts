@@ -13,6 +13,7 @@ export const tagRouter = Router();
 tagRouter.get("/volume", controller.getVolumeBySystemCode);
 tagRouter.get("/pressure", controller.getPressureBySystemCode);
 tagRouter.get("/flow", controller.getFlowBySystemCode);
+tagRouter.patch("/:id", controller.updateById);
 tagRouter.get("/", controller.getAll);
 tagRouter.get("/:id", controller.getById);
 tagRouter.post("/", controller.create);

@@ -24,4 +24,8 @@ export class TagService {
   create(data: Parameters<TagRepository["create"]>[0]) {
     return this.repo.create(data);
   }
+
+  updateById(id: string, data: Parameters<TagRepository["updateById"]>[1]) {
+    return this.repo.updateById(id, data);
+  }
 }

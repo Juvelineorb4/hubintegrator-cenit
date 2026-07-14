@@ -14,4 +14,5 @@ export const systemRouter = Router();
 systemRouter.get("/",              controller.getAll);
 systemRouter.get("/by-name/:name", controller.getByName);
 systemRouter.get("/:id",           controller.getById);
+systemRouter.patch("/:id",         controller.updateById);
 systemRouter.post("/",             controller.create);

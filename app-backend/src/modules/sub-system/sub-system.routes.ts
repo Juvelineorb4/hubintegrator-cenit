@@ -14,5 +14,7 @@ export const subSystemRouter = Router();
 subSystemRouter.get("/",                             controller.getAll);
 subSystemRouter.get("/by-nomenclature/:nomenclature", controller.getByNomenclature);
 subSystemRouter.get("/:id",                          controller.getById);
+subSystemRouter.patch("/relations/:id",              controller.updateRelationById);
+subSystemRouter.patch("/:id",                        controller.updateById);
 subSystemRouter.post("/",                            controller.create);
 subSystemRouter.post("/relations",                   controller.createRelation);
