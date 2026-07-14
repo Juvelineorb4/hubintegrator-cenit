@@ -166,34 +166,17 @@ Base path: `/api`
 | GET    | /tags/volume?systemCode=:code               | Volume tags for a system (category: VOLUME) |
 | GET    | /tags/:id                                   | Get tag by ID                     |
 | POST   | /tags                                       | Create tag                        |
-| GET    | /tag-values/raw?tagname=:name&start=:dt&end=:dt | Raw (non-resampled) tag values in a time range for a single tag. |
-| POST   | /tag-values/raw/batch | Raw values for multiple tagnames in one request. Body: `{ tagnames, start, end, limit (default 1 000 000), offset }`. Supports pagination via `hasMore`. |
-| POST   | /tag-values/batch/historized | PostgreSQL-side last-known-value resampling for multiple tagnames. Body: `{ tagnames, start, end, intervalSeconds }`. Returns one row per tag per grid point. |
+| POST   | /phd/import                                  | Ingest systems, subsystems, and tags into schema `phd` from Excel upload. |
 
-## Timestamp Output Contract
+## Historical Data Scope
 
-All three `tag-value` endpoints return timestamps as **UTC ISO 8601 strings without milliseconds** using the format:
+The app-backend no longer serves historical time-series reads from PostgreSQL `public.tag_value`.
 
-```
-"2026-04-13T17:35:42Z"
-```
+Current contract boundaries are:
+- `python-app -> odbc-api -> PHD` for historical values.
+- `python-app -> app-backend -> schema phd catalog` for systems, subsystems, tags, and import metadata.
 
-This is enforced at the SQL level in `tag-value.repository.ts` using:
-
-```sql
--- Drizzle ORM queries (findRawByTagname, findRawByTagnames)
-to_char(<col> AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-
--- Raw SQL query (findHistorizedByTagnames)
-to_char(g.interval_ts AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-```
-
-> **Rule:** Never return `Date` objects or millisecond-precision strings for `timestamp` fields in tag-value responses. Always normalize at the query level so consumers receive a consistent string.
-
-All responses follow `ApiResponse<T>` shape:
-```json
-{ "success": true, "data": [...], "total": 1 }
-```
+`app-backend` remains a catalog API over schema `phd` and does not expose `/tag-values/raw`, `/tag-values/raw/batch`, or `/tag-values/batch/historized` endpoints.
 
 ## Adding New Seeds
 

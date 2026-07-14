@@ -82,9 +82,11 @@ Base URL: `http://localhost:8000`
 ### `/tag-values/time-sampled` flow (`tag_query.py`)
 
 Fetches and resamples raw values for a single tag:
-1. `GET BACKEND/tag-values/raw?tagname=&start=&end=` → raw rows from app-backend
+1. `GET ODBC_API/tags` via `OdbcHistorianClient.fetch_raw_rows()` with tagname, start and end
 2. pandas `resample()` on UTC-aware DatetimeIndex, `mean()` per bucket
 3. Returns `TimeSampledResponse` with `data: [{timestamp, value}]`
+
+> app-backend is kept for catalog endpoints (`/tags/*`, `/systems`, `/sub-systems`, `/system-groups`, `/phd/import`), not for historical value reads.
 
 ### `/tag-values/pressureBySystem` flow (`pressure_query.py`)
 

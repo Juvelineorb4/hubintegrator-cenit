@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
@@ -216,17 +215,16 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             {"tagname": "PT_1_MAX", "timestamp": "2026-01-01T00:00:00Z", "value.float": 11.5},
         ])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.pressure_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_pressure_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                    60,
-                )
+        with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.pressure_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_pressure_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                60,
+            )
 
         self.assertEqual(result[0]["data"][0]["value"], 10.5)
         self.assertEqual(odbc.calls[0][0], ["pt_1", "pt_1_max"])
@@ -248,17 +246,16 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             {"tagname": "FI_1_SEL", "timestamp": "2026-01-01T00:00:00Z", "value.float": 1.0},
         ])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.flow_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.flow_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_flow_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                    60,
-                )
+        with patch("app.services.flow_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.flow_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_flow_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                60,
+            )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["tagname"], "fi_1")
@@ -279,17 +276,16 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
         )
         odbc = FakeOdbcClient([])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.pressure_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_pressure_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                    60,
-                )
+        with patch("app.services.pressure_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.pressure_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_pressure_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                60,
+            )
 
         self.assertEqual(result, [])
 
@@ -339,22 +335,21 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             async def get(self, *args, **kwargs):
                 return bad_json
 
-        with patch.dict(os.environ, {"ODBC_API_URL": "http://odbc.test", "HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client400()):
-                with self.assertRaises(httpx.HTTPStatusError):
-                    await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client400()):
+            with self.assertRaises(httpx.HTTPStatusError):
+                await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client500()):
-                with self.assertRaises(httpx.HTTPStatusError):
-                    await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client500()):
+            with self.assertRaises(httpx.HTTPStatusError):
+                await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientTimeout()):
-                with self.assertRaises(httpx.ReadTimeout):
-                    await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientTimeout()):
+            with self.assertRaises(httpx.ReadTimeout):
+                await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientBadJSON()):
-                with self.assertRaises(ValueError):
-                    await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientBadJSON()):
+            with self.assertRaises(ValueError):
+                await OdbcHistorianClient().fetch_interval_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc), 60)
 
     async def test_requested_tag_missing_from_odbc_response_does_not_fail(self):
         backend = FakeBackendClient(
@@ -372,17 +367,16 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             {"tagname": "FI_1", "timestamp": "2026-01-01T00:00:00Z", "value.float": 2.0},
         ])
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.flow_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.flow_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_flow_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                    60,
-                )
+        with patch("app.services.flow_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.flow_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_flow_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                60,
+            )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["tagname"], "FI_1")
@@ -447,16 +441,15 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
         ]
         odbc = FakeOdbcClient(raw_rows=raw_rows)
 
-        with patch.dict(os.environ, {"HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
-                "app.services.volume_query.OdbcHistorianClient",
-                return_value=odbc,
-            ):
-                result = await get_volume_by_system(
-                    "SYS",
-                    datetime(2026, 1, 1, tzinfo=timezone.utc),
-                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
-                )
+        with patch("app.services.volume_query.httpx.AsyncClient", return_value=backend), patch(
+            "app.services.volume_query.OdbcHistorianClient",
+            return_value=odbc,
+        ):
+            result = await get_volume_by_system(
+                "SYS",
+                datetime(2026, 1, 1, tzinfo=timezone.utc),
+                datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+            )
 
         self.assertEqual(len(result), 2)
         vol1 = next(item for item in result if item["tagname"] == "vol_1")
@@ -511,19 +504,18 @@ class HistorianSourceTests(IsolatedAsyncioTestCase):
             async def get(self, *args, **kwargs):
                 return bad_json
 
-        with patch.dict(os.environ, {"ODBC_API_URL": "http://odbc.test", "HISTORIAN_SOURCE": "odbc"}, clear=False):
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client400()):
-                with self.assertRaises(httpx.HTTPStatusError):
-                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client400()):
+            with self.assertRaises(httpx.HTTPStatusError):
+                await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client500()):
-                with self.assertRaises(httpx.HTTPStatusError):
-                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=Client500()):
+            with self.assertRaises(httpx.HTTPStatusError):
+                await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientTimeout()):
-                with self.assertRaises(httpx.ReadTimeout):
-                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientTimeout()):
+            with self.assertRaises(httpx.ReadTimeout):
+                await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
 
-            with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientBadJSON()):
-                with self.assertRaises(ValueError):
-                    await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
+        with patch("app.services.odbc_historian_client.httpx.AsyncClient", return_value=ClientBadJSON()):
+            with self.assertRaises(ValueError):
+                await OdbcHistorianClient().fetch_raw_rows(["TAG1"], datetime.now(timezone.utc), datetime.now(timezone.utc))
