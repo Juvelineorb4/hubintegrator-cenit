@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - v040rc3_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - v040rc3_redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  app-backend:
+    image: v040-app-backend:rc3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
+      PHD_METADATA_MODE: ${PHD_METADATA_MODE:-disabled}
+      PHD_METADATA_CONCURRENCY: ${PHD_METADATA_CONCURRENCY:-5}
+      PHD_METADATA_MAX_TAGS: ${PHD_METADATA_MAX_TAGS:-1000}
+    ports:
+      - "${APP_BACKEND_HOST_PORT:-3000}:3000"
+    healthcheck:
+      test: [ "CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  python-app:
+    image: v040-python-app:rc3
+    restart: unless-stopped
+    depends_on:
+      app-backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 8000
+      BACKEND_URL: http://app-backend:3000/api
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_CACHE_TTL: ${REDIS_CACHE_TTL:-300}
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
+    ports:
+      - "${PYTHON_APP_HOST_PORT:-8000}:8000"
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/').read()" ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  v040rc3_postgres_data:
+    name: hubv040rc3_postgres_data
+  v040rc3_redis_data:
+    name: hubv040rc3_redis_data

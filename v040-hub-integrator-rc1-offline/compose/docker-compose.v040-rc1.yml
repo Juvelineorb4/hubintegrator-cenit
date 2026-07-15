@@ -1,0 +1,28 @@
+services:
+  app-backend:
+    image: v040-app-backend:rc1
+    build: null
+    volumes: []
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
+      PHD_METADATA_MODE: ${PHD_METADATA_MODE:-required}
+      PHD_METADATA_CONCURRENCY: ${PHD_METADATA_CONCURRENCY:-5}
+      PHD_METADATA_MAX_TAGS: ${PHD_METADATA_MAX_TAGS:-1000}
+
+  python-app:
+    image: v040-python-app:rc1
+    build: null
+    volumes: []
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      PORT: 8000
+      BACKEND_URL: http://app-backend:3000/api
+      ODBC_API_URL: ${ODBC_API_URL}
+      ODBC_CONNECT_TIMEOUT_SECONDS: ${ODBC_CONNECT_TIMEOUT_SECONDS:-10}
+      ODBC_READ_TIMEOUT_SECONDS: ${ODBC_READ_TIMEOUT_SECONDS:-120}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: "300"
